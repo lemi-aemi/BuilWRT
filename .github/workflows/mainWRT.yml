@@ -300,10 +300,7 @@ jobs:
           echo "CONFIG_PACKAGE_network-manager-wwan=y" >> .config
           echo "CONFIG_PACKAGE_network-manager-connection-editor=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-networkmanager=y" >> .config
-
-
-
-
+          
           # Wireless & Drivers
           echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
           echo "CONFIG_PACKAGE_mt7921bt-firmware=y" >> .config
@@ -427,15 +424,8 @@ jobs:
           echo "CONFIG_PACKAGE_usb-modeswitch-data=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-core=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-uhci=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-usb2=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-usb3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-cdc-ncm=y" >> .config
           
-
-
-
-
-
           make defconfig
 
       - name: Build Firmware
