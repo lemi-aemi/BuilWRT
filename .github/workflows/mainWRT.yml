@@ -77,7 +77,7 @@ jobs:
           luci-app-speedtest-cpp uqmi kmod-usb-net-qmi-wwan wget-ssl sms-tool socat \
           kmod-usb-serial-option luci-app-netspeedtest luci-app-poweroffdevice kmod-usb-serial modemmanager luci-app-mwan3 \
           luci-app-statistics usbutils luci-app-adguardhome luci-app-adblock-plus \
-          luci-theme-argon luci-app-argon-config luci-app-nlbwmon luci-app-usb-printer \
+          luci-theme-argon luci-app-argon-config luci-app-nlbwmon luci-app-usb-printer parted losetup resize2fs blkid \
           sms-tool kmod-usb-serial-option kmod-usb-serial kmod-usb-net-qmi-wwan kmod-usb-net-cdc-mbim uqmi wget-ssl \
           luci-app-samba4 luci-app-mini-diskmanager luci-app-filebrowser apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store
 
@@ -164,8 +164,8 @@ jobs:
 
 
           # 6. RE-GROUPING MENU
-          [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
-          [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
+          [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics"/g' /usr/share/luci/menu.d/luci-app-statistics.json
+          [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
 
          
           # MODEM Group
@@ -192,6 +192,7 @@ jobs:
           # 6. NAS (Samba4, FileBrowser & Disk Manager)
           [ -f /usr/share/luci/menu.d/luci-app-samba4.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-samba4.json
           [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
+          [ -f /usr/share/luci/menu.d/luci-app-tinyfilemanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
           [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
 
 
@@ -285,6 +286,23 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-cfg80211=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mac80211=y" >> .config
           echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+          echo "CONFIG_PACKAGE_lspci=y" >> .config
+          echo "CONFIG_PACKAGE_usbutils=y" >> .config
+          echo "CONFIG_PACKAGE_lsusb=y" >> .config
+          echo "CONFIG_PACKAGE_nmcli=y" >> .config
+          echo "CONFIG_PACKAGE_networkmanager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-networkmanager=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-offload=y" >> .config
+          echo "CONFIG_PACKAGE_nftables=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-nft-qos=y" >> .config
+          echo "CONFIG_PACKAGE_pciutils=y" >> .config
+          echo "CONFIG_PACKAGE_network-manager=y" >> .config
+          echo "CONFIG_PACKAGE_network-manager-wwan=y" >> .config
+          echo "CONFIG_PACKAGE_network-manager-connection-editor=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-networkmanager=y" >> .config
+
+
+
 
           # Wireless & Drivers
           echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
@@ -319,25 +337,29 @@ jobs:
           echo "CONFIG_PACKAGE_socat=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-diskman=y" >> .config
 
           # Driver & Apps Lainnya
           echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adblock-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-diskman=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-autoreboot=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-speedtest-cpp=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-
 
           # Custom Apps (4IceG, Obsy, JerryKuku, Sirpdboy)
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-poweroff=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
@@ -364,7 +386,31 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mhi-pci-generic=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mhi-wwan-ctrl=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mhi-wwan-mbim=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mhi-wwan-qmi=y" >> .config
+          echo "CONFIG_PACKAGE_libmhi=y" >> .config
+          echo "CONFIG_PACKAGE_libqmi=y" >> .config
+          echo "CONFIG_PACKAGE_libmbim=y" >> .config
+          echo "CONFIG_PACKAGE_mbim-utils=y" >> .config
+          echo "CONFIG_PACKAGE_qmi-utils=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
           echo "CONFIG_PACKAGE_modemmanager=y" >> .config
+          echo "CONFIG_PACKAGE_libmodemmanager=y" >> .config
+          echo "CONFIG_PACKAGE_libqmi-compat=y" >> .config
+          echo "CONFIG_PACKAGE_libmbim-compat=y" >> .config
+          echo "CONFIG_PACKAGE_libiwinfo-lua=y" >> .config
+          echo "CONFIG_PACKAGE_libiwinfo=y" >> .config
+          echo "CONFIG_PACKAGE_libnl-tiny=y" >> .config
+          echo "CONFIG_PACKAGE_libubox20191228=y" >> .config
+          echo "CONFIG_PACKAGE_libubus20191228=y" >> .config
+          echo "CONFIG_PACKAGE_libuci20130110=y" >> .config
+          echo "CONFIG_PACKAGE_libustream-openssl=y" >> .config
+          echo "CONFIG_PACKAGE_libustream=y" >> .config
+          echo "CONFIG_PACKAGE_mbim-utils=y" >> .config
+          echo "CONFIG_PACKAGE_qmi-utils=y" >> .config
           echo "CONFIG_PACKAGE_uqmi=y" >> .config
           echo "CONFIG_PACKAGE_sms-tool=y" >> .config
           echo "CONFIG_PACKAGE_wget-ssl=y" >> .config
@@ -372,6 +418,23 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-usb-serial-option=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y" >> .config 
+          echo "CONFIG_PACKAGE_minicom=y" >> .config
+          echo "CONFIG_PACKAGE_picocom=y" >> .config
+          echo "CONFIG_PACKAGE_luci-proto-qmi=y" >> .config
+          echo "CONFIG_PACKAGE_luci-proto-mbim=y" >> .config
+          echo "CONFIG_PACKAGE_luci-proto-modemmanager=y" >> .config
+          echo "CONFIG_PACKAGE_usb-modeswitch=y" >> .config
+          echo "CONFIG_PACKAGE_usb-modeswitch-data=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-core=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-uhci=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb2=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb3=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-cdc-ncm=y" >> .config
+          
+
+
+
+
 
           make defconfig
 
@@ -384,5 +447,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LemWRT-UltraPro-Final-Ready
+          name: LemWRT-UltraPro-x86_64
           path: openwrt/bin/targets/x86/64/*img.gz
