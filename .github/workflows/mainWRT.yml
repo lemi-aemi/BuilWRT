@@ -1,0 +1,388 @@
+name: Build LemWRT x86_64 Final Ultra-Pro
+
+on:
+  workflow_dispatch:
+    inputs:
+      set_hostname:
+        description: 'Masukkan Nama Router (Hostname)'
+        required: true
+        default: 'LemWRT'
+      set_lan_ip:
+        description: 'Masukkan IP LAN'
+        required: true
+        default: '10.10.88.1'
+      set_ssid:
+        description: 'Masukkan Nama WiFi (SSID)'
+        required: true
+        default: 'LemWRT_PRO'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cleanup Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/lib/node_modules
+          sudo docker image prune --all --force
+          sudo apt-get clean
+          df -h
+
+      - name: Prepare Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
+
+      - name: Clone OpenWrt 25.12 & Custom Branding
+        run: |
+          git clone https://github.com/openwrt/openwrt.git -b openwrt-25.12 openwrt
+          cd openwrt
+          
+          # CUSTOM BRANDING & LOGIN TEXT
+          sed -i 's/OpenWrt/LemWRT/g' include/target.mk
+          sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
+          sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
+          echo "LemWRT 25.12" > package/base-files/files/etc/openwrt_version
+
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Add Custom Apps & Themes
+        run: |
+          cd openwrt/package
+          # Integrasi Repository Eksternal
+          git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
+          git clone --depth 1 https://github.com/souwei168/luci-app-store.git
+          git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
+          git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
+          git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
+          git clone --depth 1 https://github.com/obsy/apcontroller.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-atcommands.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-sms-manager.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-lite-watchdog.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
+          git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
+          git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
+          git clone --depth 1 https://github.com/sirpdboy/luci-app-netspeedtest.git
+          
+          cd ..
+          # Install Feeds Tambahan & Dependencies
+          ./scripts/feeds install luci ttyd luci-app-ttyd luci-app-openvpn luci-app-wireguard \
+          luci-app-speedtest-cpp uqmi kmod-usb-net-qmi-wwan wget-ssl sms-tool socat \
+          kmod-usb-serial-option luci-app-netspeedtest luci-app-poweroffdevice kmod-usb-serial modemmanager luci-app-mwan3 \
+          luci-app-statistics usbutils luci-app-adguardhome luci-app-adblock-plus \
+          luci-theme-argon luci-app-argon-config luci-app-nlbwmon luci-app-usb-printer \
+          sms-tool kmod-usb-serial-option kmod-usb-serial kmod-usb-net-qmi-wwan kmod-usb-net-cdc-mbim uqmi wget-ssl \
+          luci-app-samba4 luci-app-mini-diskmanager luci-app-filebrowser apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store
+
+      - name: Inject Custom DNA (Ultimate Branding & Layout)
+        run: |
+          cd openwrt
+          mkdir -p files/etc/uci-defaults
+          cat <<EOF > files/etc/uci-defaults/99-lemwrt-final
+          #!/bin/sh
+          # 1. Identitas
+          uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
+          echo "mi1003\nmi1003" | passwd root
+
+          # 2. Universal Bridge LAN
+          uci delete network.lan
+          uci set network.lan=interface
+          uci set network.lan.device='br-lan'
+          uci set network.lan.proto='static'
+          uci set network.lan.ipaddr='${{ github.event.inputs.set_lan_ip }}'
+          uci set network.lan.netmask='255.255.255.0'
+          uci set network.device_lan=device
+          uci set network.device_lan.name='br-lan'
+          uci set network.device_lan.type='bridge'
+          for i in \$(ls /sys/class/net | grep -E 'eth|enp|ena'); do
+            uci add_list network.device_lan.ports="\$i"
+          done
+
+          # 2a. USB Tethering
+          uci set network.wan_usb=interface
+          uci set network.wan_usb.proto='dhcp'
+          uci set network.wan_usb.device='usb0'
+          uci set network.wan_usb.metric='20'
+          uci set network.device_usb=device
+          uci set network.device_usb.name='usb0'
+          uci commit network
+
+          # 3. WiFi Setup
+          uci set wireless.radio0.disabled='0'
+          uci set wireless.radio0.band='5g'
+          uci set wireless.radio0.channel='149'
+          uci set wireless.radio0.htmode='HE80'
+          uci set wireless.radio0.country='US'
+          uci set wireless.default_radio0.disabled='0'
+          uci set wireless.default_radio0.ssid='${{ github.event.inputs.set_ssid }}'
+          uci set wireless.default_radio0.key='mi123456'
+          uci set wireless.default_radio0.encryption='sae-mixed'
+          uci set wireless.default_radio0.network='lan'
+
+
+          # 4. Statistik
+          uci set luci_statistics.collectd_interface.enable='1'
+          uci set luci_statistics.collectd_interface.Interfaces='br-lan usb0'
+          uci set luci_statistics.collectd_interface.IgnoreSelected='0'
+          uci set nlbwmon.@nlbwmon[0].refresh_interval='2'
+          uci set nlbwmon.@nlbwmon[0].top_count='10'
+          uci set nlbwmon.@nlbwmon[0].show_interface='1'
+          uci set nlbwmon.@nlbwmon[0].show_mac='0'
+          uci set nlbwmon.@nlbwmon[0].show_hostname='1'
+          uci set nlbwmon.@nlbwmon[0].show_graph='1'
+          uci set nlbwmon.@nlbwmon[0].graph_type='0
+          uci set nlbwmon.@nlbwmon[0].history_size='1440'
+          
+
+          # 5. Theme Argon & Fix-Collision Setup
+          uci set argon.@global[0].login_footer='LemWRT: High Performance Network'
+          uci set argon.@global[0].bing_background='1'
+          uci set argon.@global[0].theme_compatibility_mode='1'
+          uci set argon.@global[0].darkmode='1'
+          uci set argon.@global[0].rounded_corners='1'
+          uci set argon.@global[0].custom_color_enable='1'
+          uci set argon.@global[0].custom_color_primary='#1abc9c'
+          uci set argon.@global[0].custom_color_accent='#e74c3c'
+          uci set argon.@global[0].custom_color_header='#34495e'
+          uci set argon.@global[0].custom_color_sidebar='#2c3e50'
+          uci set argon.@global[0].custom_color_footer='#34495e'
+          uci set argon.@global[0].custom_color_link='#e67e22'
+          uci set argon.@global[0].custom_color_button='#e67e22'
+          uci set argon.@global[0].custom_color_button_hover='#d35400
+
+          
+          # Optimasi ModemManager agar tidak mengunci port AT (Untuk RM520N-GL)
+          uci set modemmanager.@modemmanager[0].loglevel='ERR'
+          uci set modemmanager.@modemmanager[0].enable_at_locking='0'
+
+
+          # 6. RE-GROUPING MENU
+          [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
+          [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
+
+         
+          # MODEM Group
+          [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
+          [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
+          [ -f /usr/share/luci/menu.d/luci-app-atcommands.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atcommands.json
+          [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
+          [ -f /usr/share/luci/menu.d/luci-app-sms-manager.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-manager.json
+          [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
+          [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
+  
+          # 3. DNS
+          [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
+          [ -f /usr/share/luci/menu.d/luci-app-adblock-plus.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adblock-plus.json
+          
+          # 4. VPN
+          [ -f /usr/share/luci/menu.d/luci-app-openvpn.json ] && sed -i 's/"admin\/services"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-openvpn.json
+          [ -f /usr/share/luci/menu.d/luci-app-wireguard.json ] && sed -i 's/"admin\/network"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-wireguard.json
+          
+          # 5. WIFI
+          [ -f /usr/share/luci/menu.d/luci-base.json ] && sed -i 's/"admin\/network\/wireless"/"admin\/wifi"/g' /usr/share/luci/menu.d/luci-base.json
+          [ -f /usr/share/luci/menu.d/apcontroller.json ] && sed -i 's/"admin\/network"/"admin\/wifi"/g' /usr/share/luci/menu.d/apcontroller.json
+
+          # 6. NAS (Samba4, FileBrowser & Disk Manager)
+          [ -f /usr/share/luci/menu.d/luci-app-samba4.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-samba4.json
+          [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
+          [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
+
+
+          uci commit
+          exit 0
+          EOF
+          chmod +x files/etc/uci-defaults/99-lemwrt-final
+
+      - name: Load Configuration
+        run: |
+          cd openwrt
+          echo "CONFIG_TARGET_x86=y" >> .config
+          echo "CONFIG_TARGET_x86_64=y" >> .config
+          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> .config
+          echo "CONFIG_TARGET_x86_64_generic=y" >> .config
+          echo "CONFIG_TARGET_KERNEL_PARTSIZE=512" >> .config
+          echo "CONFIG_TARGET_ROOTFS_PARTSIZE=1028" >> .config
+          echo "CONFIG_TARGET_luci=y" >> .config
+          echo "CONFIG_PACKAGE_luci=y" >> .config
+          echo "CONFIG_PACKAGE_luci-base=y" >> .config
+          echo "CONFIG_PACKAGE_luci-ssl=y" >> .config
+          echo "CONFIG_PACKAGE_luci-ssl-openssl=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
+          echo "CONFIG_PACKAGE_ttyd=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-fs-ext4=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nls-base=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nls-utf8=y" >> .config
+          echo "CONFIG_PACKAGE_block-mount=y" >> .config
+          echo "CONFIG_PACKAGE_uboot-envtools=y" >> .config
+          echo "CONFIG_PACKAGE_partx-utils=y" >> .config
+          echo "CONFIG_PACKAGE_f2fs-tools=y" >> .config
+          echo "CONFIG_PACKAGE_e2fsprogs=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-fs-f2fs=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mtd-rw=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mtd=y" >> .config
+          echo "CONFIG_PACKAGE_mtd=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-aes=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-ccm=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-crc32c=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-hash=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-manager=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-sha256=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-crypto-sha512=y" >> .config
+          echo "CONFIG_PACKAGE_libc=y" >> .config
+          echo "CONFIG_PACKAGE_libgcc=y" >> .config
+          echo "CONFIG_PACKAGE_libpthread=y" >> .config
+          echo "CONFIG_PACKAGE_libustream-openssl=y" >> .config
+          echo "CONFIG_PACKAGE_openssl-util=y" >> .config
+          echo "CONFIG_PACKAGE_openssl=y" >> .config
+          echo "CONFIG_PACKAGE_ca-certificates=y" >> .config
+          echo "CONFIG_PACKAGE_dnsmasq=y" >> .config
+          echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
+          echo "CONFIG_PACKAGE_firewall=y" >> .config
+          echo "CONFIG_PACKAGE_iptables=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ipt-tproxy=y" >> .config
+          echo "CONFIG_PACKAGE_logd=y" >> .config
+          echo "CONFIG_PACKAGE_miniupnpd=y" >> .config
+          echo "CONFIG_PACKAGE_ppp=y" >> .config
+          echo "CONFIG_PACKAGE_ppp-mod-pppoe=y" >> .config
+          echo "CONFIG_PACKAGE_odhcp6c=y" >> .config
+          echo "CONFIG_PACKAGE_odhcpd-ipv6only=y" >> .config
+          echo "CONFIG_PACKAGE_uclient-fetch=y" >> .config
+          echo "CONFIG_PACKAGE_wget=y" >> .config
+          echo "CONFIG_PACKAGE_curl=y" >> .config
+          echo "CONFIG_PACKAGE_curl-ca-bundle=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-slhc=y" >> .config
+          echo "CONFIG_PACKAGE_ppp-mod-pptp=y" >> .config
+          echo "CONFIG_PACKAGE_ppp-mod-chap=y" >> .config
+          echo "CONFIG_PACKAGE_ppp-mod-mschap=y" >> .config
+          echo "CONFIG_PACKAGE_ppp-mod-mschapv2=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-pppoe=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-pptp=y" >> .config
+          echo "CONFIG_PACKAGE_libpam=y" >> .config
+          echo "CONFIG_PACKAGE_libiwinfo-lua=y" >> .config
+          echo "CONFIG_PACKAGE_libiwinfo=y" >> .config
+          echo "CONFIG_PACKAGE_libnl-tiny=y" >> .config
+          echo "CONFIG_PACKAGE_libubox20191228=y" >> .config
+          echo "CONFIG_PACKAGE_libubus20191228=y" >> .config
+          echo "CONFIG_PACKAGE_libuci20130110=y" >> .config
+          echo "CONFIG_PACKAGE_libustream=y" >> .config
+          echo "CONFIG_PACKAGE_libxtables=y" >> .config
+          echo "CONFIG_PACKAGE_mtd-utils=y" >> .config
+          echo "CONFIG_PACKAGE_netifd=y" >> .config
+          echo "CONFIG_PACKAGE_ubusd=y" >> .config
+          echo "CONFIG_PACKAGE_uci=y" >> .config
+          echo "CONFIG_PACKAGE_urandom-seed=y" >> .config
+          echo "CONFIG_PACKAGE_urngd=y" >> .config
+          echo "CONFIG_PACKAGE_zlib=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-cfg80211=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mac80211=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+
+          # Wireless & Drivers
+          echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
+          echo "CONFIG_PACKAGE_mt7921bt-firmware=y" >> .config
+          echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-iwlwifi=y" >> .config
+          echo "CONFIG_PACKAGE_iwlwifi-firmware-ax200=y" >> .config
+
+          # Driver WiFi Qualcomm QCA9882 (ath10k) 
+          echo "CONFIG_PACKAGE_kmod-ath10k=y" >> .config
+          echo "CONFIG_PACKAGE_ath10k-firmware-qca988x=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath10k-ct=n" >> .config
+          
+          # USB Tethering Drivers
+          echo "CONFIG_PACKAGE_kmod-usb-net=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-rndis=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-cdc-ether=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-ipheth=y" >> .config
+          echo "CONFIG_PACKAGE_usbmuxd=y" >> .config
+          echo "CONFIG_PACKAGE_libimobiledevice=y" >> .config
+
+          # Apps & NAS
+          echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-filebrowser=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+          echo "CONFIG_PACKAGE_socat=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+
+          # Driver & Apps Lainnya
+          echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-adblock-plus=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+
+          # Custom Apps (4IceG, Obsy, JerryKuku, Sirpdboy)
+          echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-poweroff=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
+          echo "CONFIG_PACKAGE_apcontroller=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-poweroffdevice=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
+
+          # Driver LAN PCIe High-End (Intel Server Grade)
+          echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-forcedeth=y" >> .config
+
+          # Hardware Support (Intel/Realtek)
+          echo "CONFIG_PACKAGE_kmod-igb=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-igc=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-r8169=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
+
+          # RM520N / 5G Support
+          echo "CONFIG_PACKAGE_kmod-mhi-bus=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mhi-net=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mhi-pci-generic=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mhi-wwan-ctrl=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mhi-wwan-mbim=y" >> .config
+          echo "CONFIG_PACKAGE_modemmanager=y" >> .config
+          echo "CONFIG_PACKAGE_uqmi=y" >> .config
+          echo "CONFIG_PACKAGE_sms-tool=y" >> .config
+          echo "CONFIG_PACKAGE_wget-ssl=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-serial=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-serial-option=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y" >> .config 
+
+          make defconfig
+
+      - name: Build Firmware
+        run: |
+          cd openwrt
+          # Menggunakan -k agar build x86_64 tetap selesai meskipun ada paket incompatible
+          make -j$(nproc) -k || make -j1 V=s -k
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LemWRT-UltraPro-Final-Ready
+          path: openwrt/bin/targets/x86/64/*img.gz
