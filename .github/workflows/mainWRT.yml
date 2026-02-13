@@ -258,7 +258,7 @@ jobs:
           # Driver WiFi Qualcomm QCA9882 (ath10k) 
           CONFIG_PACKAGE_kmod-ath10k=y
           CONFIG_PACKAGE_ath10k-firmware-qca988x=y
-          CONFIG_PACKAGE_kmod-ath10k-ct=n
+          CONFIG_PACKAGE_kmod-ath10k-ct=y
           
           # Driver LAN & Bridge (Lengkap sesuai request)
           CONFIG_PACKAGE_kmod-igc=y
@@ -325,6 +325,7 @@ jobs:
           CONFIG_PACKAGE_networkmanager=y
           CONFIG_PACKAGE_network-manager=y
           CONFIG_PACKAGE_network-manager-wwan=y
+          CONFIG_PACKAGE_luci-app-nlbwmon=y
           
           EOF
           
