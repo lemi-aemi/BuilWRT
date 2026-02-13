@@ -276,8 +276,24 @@ jobs:
           CONFIG_PACKAGE_luci-app-speedtest-cpp=y
           CONFIG_PACKAGE_luci-app-samba4=y
           CONFIG_PACKAGE_luci-app-tinyfilemanager=y
-          CONFIG_PACKAGCONFIG_PACKAGE_usbutils=y
-          E_pciutils=y
+          CONFIG_PACKAGE_usbutils=y
+          CONFIG_PACKAGE_usbutils=y
+          CONFIG_PACKAGE_wget=y
+          CONFIG_PACKAGE_curl=y
+          CONFIG_PACKAGE_curl-ca-bundle=y
+          CONFIG_PACKAGE_kmod-mac80211=y
+          CONFIG_PACKAGE_firewall=y
+          CONFIG_PACKAGE_iptables=y
+          CONFIG_PACKAGE_f2fs-tools=y
+          CONFIG_PACKAGE_e2fsprogs=y
+          CONFIG_PACKAGE_kmod-fs-f2fs=y
+          CONFIG_PACKAGE_kmod-mtd-rw=y
+          CONFIG_PACKAGE_kmod-mtd=y
+          CONFIG_PACKAGE_mtd=y
+          CONFIG_PACKAGE_nmcli=y
+          CONFIG_PACKAGE_networkmanager=y
+          CONFIG_PACKAGE_network-manager=y
+          CONFIG_PACKAGE_network-manager-wwan=y
           
           EOF
           
