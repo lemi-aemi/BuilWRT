@@ -25,16 +25,16 @@ jobs:
 
       - name: Cleanup Disk Space
         run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/lib/node_modules /opt/hostedtoolcache
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/lib/node_modules
           sudo docker image prune --all --force
           sudo apt-get clean
           df -h
+
       - name: Prepare Environment
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-          gettext git libncurses5-dev libncurses6 libssl-dev python3-distutils rsync unzip zlib1g-dev \
-          libncurses-dev zstd swig python3-setuptools python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
+          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
 
       - name: Clone OpenWrt 25.12 & Custom Branding
         run: |
@@ -53,6 +53,7 @@ jobs:
       - name: Add Custom Apps & Themes
         run: |
           cd openwrt/package
+          # Integrasi Repository Eksternal
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
@@ -71,6 +72,7 @@ jobs:
           git clone --depth 1 https://github.com/sirpdboy/luci-app-netspeedtest.git
           
           cd ..
+          # Install Feeds Tambahan & Dependencies
           ./scripts/feeds install luci ttyd luci-app-ttyd luci-app-openvpn luci-app-wireguard \
           luci-app-speedtest-cpp uqmi kmod-usb-net-qmi-wwan wget-ssl sms-tool socat \
           kmod-usb-serial-option luci-app-netspeedtest luci-app-poweroffdevice kmod-usb-serial modemmanager luci-app-mwan3 \
@@ -79,7 +81,7 @@ jobs:
           sms-tool kmod-usb-serial-option kmod-usb-serial kmod-usb-net-qmi-wwan kmod-usb-net-cdc-mbim uqmi wget-ssl \
           luci-app-samba4 luci-app-mini-diskmanager luci-app-filebrowser apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store
 
-      - name: Inject Custom DNA (Ultimate Branding & Multi-WAN Layout)
+      - name: Inject Custom DNA (Ultimate Branding & Layout)
         run: |
           cd openwrt
           mkdir -p files/etc/uci-defaults
@@ -130,7 +132,7 @@ jobs:
           uci set network.USBTeth.device='usb0'
           uci set network.USBTeth.metric='30'
 
-          # 4. MWAN3 FAILOVER CONFIGURATION
+           # 4. MWAN3 FAILOVER CONFIGURATION
           uci delete mwan3.wan
           uci delete mwan3.wan6
           
@@ -191,13 +193,26 @@ jobs:
           # Add new interfaces to WAN Firewall Zone
           uci add_list firewall.@zone[1].network='wan'
           uci add_list firewall.@zone[1].network='wwan'
-          uci add_list firewall.@zone[1].network='USBTeth'
+          uci add_list firewall.@zone[1].network='USBTeth'    
 
-          # 6. Theme & UI Fixes
+          # 5. Theme Argon & Fix-Collision Setup
+          uci set argon.@global[0].login_footer='LemWRT: High Performance Network'
+          uci set argon.@global[0].bing_background='1'
+          uci set argon.@global[0].theme_compatibility_mode='1'
           uci set argon.@global[0].darkmode='1'
+          uci set argon.@global[0].rounded_corners='1'
+          uci set argon.@global[0].custom_color_enable='1'
           uci set argon.@global[0].custom_color_primary='#1abc9c'
+          uci set argon.@global[0].custom_color_accent='#e74c3c'
+          uci set argon.@global[0].custom_color_header='#34495e'
+          uci set argon.@global[0].custom_color_sidebar='#2c3e50'
+          uci set argon.@global[0].custom_color_footer='#34495e'
+          uci set argon.@global[0].custom_color_link='#e67e22'
+          uci set argon.@global[0].custom_color_button='#e67e22'
+          uci set argon.@global[0].custom_color_button_hover='#d35400
 
-           # 6. RE-GROUPING MENU
+         
+          # 6. RE-GROUPING MENU
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
 
@@ -205,7 +220,7 @@ jobs:
           # MODEM Group
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
-          [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
+          [ -f /usr/share/luci/menu.d/luci-app-atcommands.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atcommands.json
           [ -f /usr/share/luci/menu.d/luci-app-sms-manager.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-manager.json
           [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
           [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
@@ -227,7 +242,8 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
           [ -f /usr/share/luci/menu.d/luci-app-tinyfilemanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
           [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
-          
+
+
           uci commit
           exit 0
           EOF
@@ -245,10 +261,87 @@ jobs:
           CONFIG_TARGET_ROOTFS_PARTSIZE=1024
           CONFIG_TARGET_luci=y
           CONFIG_PACKAGE_luci=y
+          CONFIG_PACKAGE_luci-base=y
           CONFIG_PACKAGE_luci-ssl=y
-          CONFIG_PACKAGE_luci-app-mwan3=y
+          CONFIG_PACKAGE_luci-ssl-openssl=y
           CONFIG_PACKAGE_luci-app-ttyd=y
-
+          CONFIG_PACKAGE_block-mount=y
+          CONFIG_PACKAGE_uboot-envtools=y
+          CONFIG_PACKAGE_partx-utils=y
+          CONFIG_PACKAGE_f2fs-tools=y
+          CONFIG_PACKAGE_e2fsprogs=y
+          CONFIG_PACKAGE_kmod-fs-f2fs=y
+          CONFIG_PACKAGE_kmod-mtd-rw=y
+          CONFIG_PACKAGE_kmod-mtd=y
+          CONFIG_PACKAGE_mtd=y
+          CONFIG_PACKAGE_kmod-crypto-aes=y
+          CONFIG_PACKAGE_kmod-crypto-ccm=y
+          CONFIG_PACKAGE_kmod-crypto-crc32c=y
+          CONFIG_PACKAGE_kmod-crypto-hash=y
+          CONFIG_PACKAGE_kmod-crypto-manager=y
+          CONFIG_PACKAGE_kmod-crypto-sha256=y
+          CONFIG_PACKAGE_kmod-crypto-sha512=y
+          CONFIG_PACKAGE_libc=y
+          CONFIG_PACKAGE_libgcc=y
+          CONFIG_PACKAGE_libpthread=y
+          CONFIG_PACKAGE_libustream-openssl=y
+          CONFIG_PACKAGE_openssl-util=y
+          CONFIG_PACKAGE_openssl=y
+          CONFIG_PACKAGE_ca-certificates=y
+          CONFIG_PACKAGE_dnsmasq=y
+          CONFIG_PACKAGE_dnsmasq-full=y
+          CONFIG_PACKAGE_firewall=y
+          CONFIG_PACKAGE_iptables=y
+          CONFIG_PACKAGE_iptables-mod-tproxy=y
+          CONFIG_PACKAGE_kmod-ipt-tproxy=y
+          CONFIG_PACKAGE_logd=y
+          CONFIG_PACKAGE_miniupnpd=y
+          CONFIG_PACKAGE_ppp=y
+          CONFIG_PACKAGE_ppp-mod-pppoe=y
+          CONFIG_PACKAGE_odhcp6c=y
+          CONFIG_PACKAGE_odhcpd-ipv6only=y
+          CONFIG_PACKAGE_uclient-fetch=y
+          CONFIG_PACKAGE_wget=y
+          CONFIG_PACKAGE_curl=y
+          CONFIG_PACKAGE_curl-ca-bundle=y
+          CONFIG_PACKAGE_kmod-slhc=y
+          CONFIG_PACKAGE_ppp-mod-pptp=y
+          CONFIG_PACKAGE_ppp-mod-chap=y
+          CONFIG_PACKAGE_ppp-mod-mschap=y
+          CONFIG_PACKAGE_ppp-mod-mschapv2=y
+          CONFIG_PACKAGE_kmod-pppoe=y
+          CONFIG_PACKAGE_kmod-pptp=y
+          CONFIG_PACKAGE_libpam=y
+          CONFIG_PACKAGE_libiwinfo-lua=y
+          CONFIG_PACKAGE_libiwinfo=y
+          CONFIG_PACKAGE_libnl-tiny=y
+          CONFIG_PACKAGE_libustream=y
+          CONFIG_PACKAGE_libxtables=y
+          CONFIG_PACKAGE_mtd-utils=y
+          CONFIG_PACKAGE_netifd=y
+          CONFIG_PACKAGE_ubusd=y
+          CONFIG_PACKAGE_uci=y
+          CONFIG_PACKAGE_urandom-seed=y
+          CONFIG_PACKAGE_urngd=y
+          CONFIG_PACKAGE_zlib=y
+          CONFIG_PACKAGE_kmod-ath=y
+          CONFIG_PACKAGE_kmod-cfg80211=y
+          CONFIG_PACKAGE_kmod-mac80211=y
+          CONFIG_PACKAGE_kmod-tun=y
+          CONFIG_PACKAGE_lspci=y
+          CONFIG_PACKAGE_usbutils=y
+          CONFIG_PACKAGE_lsusb=y
+          CONFIG_PACKAGE_nmcli=y
+          CONFIG_PACKAGE_networkmanager=y
+          CONFIG_PACKAGE_kmod-nft-offload=y
+          CONFIG_PACKAGE_nftables=y
+          CONFIG_PACKAGE_luci-app-nft-qos=y
+          CONFIG_PACKAGE_pciutils=y
+          CONFIG_PACKAGE_network-manager=y
+          CONFIG_PACKAGE_network-manager-wwan=y
+          CONFIG_PACKAGE_network-manager-connection-editor=y
+          CONFIG_PACKAGE_luci-app-networkmanager=y
+          
           # Wireless & Drivers
           CONFIG_PACKAGE_kmod-mt7921e=y
           CONFIG_PACKAGE_mt7921bt-firmware=y
@@ -259,46 +352,30 @@ jobs:
           # Driver WiFi Qualcomm QCA9882 (ath10k) 
           CONFIG_PACKAGE_kmod-ath10k=y
           CONFIG_PACKAGE_ath10k-firmware-qca988x=y
-          CONFIG_PACKAGE_kmod-ath10k-ct=y
+          CONFIG_PACKAGE_kmod-ath10k-ct=n
           
-          # Driver LAN & Bridge (Lengkap sesuai request)
-          CONFIG_PACKAGE_kmod-igc=y
-          CONFIG_PACKAGE_kmod-ixgbe=y
-          CONFIG_PACKAGE_kmod-e1000e=y
-          CONFIG_PACKAGE_kmod-r8169=y
-          CONFIG_PACKAGE_kmod-r8125=y
-          CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y
-          CONFIG_PACKAGE_kmod-usb-net-asix=y
-          CONFIG_PACKAGE_kmod-usb-net-rtl8152=y
-
-          # Modem RM520N & Mobile Data
-          CONFIG_PACKAGE_modemmanager=y
-          CONFIG_PACKAGE_luci-proto-modemmanager=y
-          CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y
-          CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y
-          CONFIG_PACKAGE_kmod-mhi-bus=y
-          CONFIG_PACKAGE_kmod-mhi-net=y
-          CONFIG_PACKAGE_kmod-mhi-pci-generic=y
-
-          # USB Tethering Android
+          # USB Tethering Drivers
+          CONFIG_PACKAGE_kmod-usb-net=y
           CONFIG_PACKAGE_kmod-usb-net-rndis=y
           CONFIG_PACKAGE_kmod-usb-net-ipheth=y
           CONFIG_PACKAGE_usbmuxd=y
 
-          # Apps & Themes (dari script sebelumnya)
-          CONFIG_PACKAGE_luci-theme-argon=y
-          CONFIG_PACKAGE_luci-app-argon-config=y
-          CONFIG_PACKAGE_luci-app-adguardhome=y
+          # Apps & NAS
+          CONFIG_PACKAGE_luci-app-samba4=y
           CONFIG_PACKAGE_luci-app-filebrowser=y
           CONFIG_PACKAGE_luci-app-mini-diskmanager=y
-          CONFIG_PACKAGE_luci-app-3ginfo-lite=y
-          CONFIG_PACKAGE_luci-app-modemband=y
-          CONFIG_PACKAGE_luci-app-sms-manager=y
-          CONFIG_PACKAGE_luci-app-store=y
-          CONFIG_PACKAGE_luci-app-poweroff=y
-          CONFIG_PACKAGE_luci-app-lite-watchdog=y
-          CONFIG_PACKAGE_apcontroller=y
-          CONFIG_PACKAGE_luci-app-netspeedtest=y
+          CONFIG_PACKAGE_luci-app-adguardhome=y
+          CONFIG_PACKAGE_luci-app-mwan3=y
+          CONFIG_PACKAGE_luci-theme-argon=y
+          CONFIG_PACKAGE_socat=y
+          CONFIG_PACKAGE_luci-app-argon-config=y
+          CONFIG_PACKAGE_luci-app-nlbwmon=y
+          CONFIG_PACKAGE_luci-app-tinyfilemanager=y
+          CONFIG_PACKAGE_luci-app-diskman=y
+
+          # Driver & Apps Lainnya
+          CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y
+          CONFIG_PACKAGE_kmod-usb-net-rtl8152=y
           CONFIG_PACKAGE_luci-app-adblock-plus=y
           CONFIG_PACKAGE_luci-app-statistics=y
           CONFIG_PACKAGE_luci-app-openvpn=y
@@ -306,37 +383,39 @@ jobs:
           CONFIG_PACKAGE_luci-app-autoreboot=y
           CONFIG_PACKAGE_luci-app-internet-detector=y
           CONFIG_PACKAGE_luci-app-speedtest-cpp=y
-          CONFIG_PACKAGE_luci-app-samba4=y
-          CONFIG_PACKAGE_luci-app-tinyfilemanager=y
-          CONFIG_PACKAGE_usbutils=y
-          CONFIG_PACKAGE_usbutils=y
-          CONFIG_PACKAGE_wget=y
-          CONFIG_PACKAGE_curl=y
-          CONFIG_PACKAGE_curl-ca-bundle=y
-          CONFIG_PACKAGE_kmod-mac80211=y
-          CONFIG_PACKAGE_firewall=y
-          CONFIG_PACKAGE_iptables=y
-          CONFIG_PACKAGE_f2fs-tools=y
-          CONFIG_PACKAGE_e2fsprogs=y
-          CONFIG_PACKAGE_kmod-fs-f2fs=y
-          CONFIG_PACKAGE_kmod-mtd-rw=y
-          CONFIG_PACKAGE_kmod-mtd=y
-          CONFIG_PACKAGE_mtd=y
-          CONFIG_PACKAGE_nmcli=y
-          CONFIG_PACKAGE_networkmanager=y
-          CONFIG_PACKAGE_network-manager=y
-          CONFIG_PACKAGE_network-manager-wwan=y
-          CONFIG_PACKAGE_luci-app-nlbwmon=y
-          
+
+          # Custom Apps
+          CONFIG_PACKAGE_luci-app-store=y
+          CONFIG_PACKAGE_luci-app-poweroff=y
+          CONFIG_PACKAGE_luci-app-lite-watchdog=y
+          CONFIG_PACKAGE_apcontroller=y
+          CONFIG_PACKAGE_luci-app-netspeedtest=y
+
+          # Driver LAN PCIe High-End
+          CONFIG_PACKAGE_kmod-igc=y
+          CONFIG_PACKAGE_kmod-ixgbe=y
+          CONFIG_PACKAGE_kmod-e1000e=y
+          CONFIG_PACKAGE_kmod-igb=y
+          CONFIG_PACKAGE_kmod-igc=y
+          CONFIG_PACKAGE_kmod-r8169=y
+
+          # RM520N / 5G Support
+          CONFIG_PACKAGE_modemmanager=y
+          CONFIG_PACKAGE_luci-proto-modemmanager=y
+          CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y
+          CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y
+          CONFIG_PACKAGE_kmod-mhi-bus=y
+          CONFIG_PACKAGE_kmod-mhi-net=y
+          CONFIG_PACKAGE_kmod-mhi-pci-generic=y
+         
           EOF
           
-          # Merged sisanya dari config user
           make defconfig
 
       - name: Build Firmware
         run: |
           cd openwrt
-          # Mencoba build paralel, jika gagal otomatis ganti ke single-thread dengan log detail (V=s)
+          # Menggunakan -k agar build x86_64 tetap selesai meskipun ada paket incompatible
           make -j$(nproc) -k || make -j1 V=s -k
 
       - name: Upload Artifact
@@ -344,4 +423,3 @@ jobs:
         with:
           name: LemWRT-UltraPro-x86_64
           path: openwrt/bin/targets/x86/64/*img.gz
-          
