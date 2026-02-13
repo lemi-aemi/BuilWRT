@@ -245,6 +245,7 @@ jobs:
           CONFIG_TARGET_ROOTFS_PARTSIZE=1024
           CONFIG_TARGET_luci=y
           CONFIG_PACKAGE_luci=y
+          CONFIG_PACKAGE_luci-ssl=y
           CONFIG_PACKAGE_luci-app-mwan3=y
           CONFIG_PACKAGE_luci-app-ttyd=y
 
