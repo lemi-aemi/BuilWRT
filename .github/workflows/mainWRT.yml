@@ -250,6 +250,11 @@ jobs:
           CONFIG_PACKAGE_luci-app-3ginfo-lite=y
           CONFIG_PACKAGE_luci-app-modemband=y
           CONFIG_PACKAGE_luci-app-sms-manager=y
+          CONFIG_PACKAGE_luci-app-store=y
+          CONFIG_PACKAGE_luci-app-poweroff=y
+          CONFIG_PACKAGE_luci-app-lite-watchdog=y
+          CONFIG_PACKAGE_apcontroller=y
+          CONFIG_PACKAGE_luci-app-netspeedtest=y
           EOF
           
           # Merged sisanya dari config user
