@@ -196,6 +196,37 @@ jobs:
           # 6. Theme & UI Fixes
           uci set argon.@global[0].darkmode='1'
           uci set argon.@global[0].custom_color_primary='#1abc9c'
+
+           # 6. RE-GROUPING MENU
+          [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics"/g' /usr/share/luci/menu.d/luci-app-statistics.json
+          [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
+
+         
+          # MODEM Group
+          [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
+          [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
+          [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
+          [ -f /usr/share/luci/menu.d/luci-app-sms-manager.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-manager.json
+          [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
+          [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
+  
+          # 3. DNS
+          [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
+          [ -f /usr/share/luci/menu.d/luci-app-adblock-plus.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adblock-plus.json
+          
+          # 4. VPN
+          [ -f /usr/share/luci/menu.d/luci-app-openvpn.json ] && sed -i 's/"admin\/services"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-openvpn.json
+          [ -f /usr/share/luci/menu.d/luci-app-wireguard.json ] && sed -i 's/"admin\/network"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-wireguard.json
+          
+          # 5. WIFI
+          [ -f /usr/share/luci/menu.d/luci-base.json ] && sed -i 's/"admin\/network\/wireless"/"admin\/wifi"/g' /usr/share/luci/menu.d/luci-base.json
+          [ -f /usr/share/luci/menu.d/apcontroller.json ] && sed -i 's/"admin\/network"/"admin\/wifi"/g' /usr/share/luci/menu.d/apcontroller.json
+
+          # 6. NAS (Samba4, FileBrowser & Disk Manager)
+          [ -f /usr/share/luci/menu.d/luci-app-samba4.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-samba4.json
+          [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
+          [ -f /usr/share/luci/menu.d/luci-app-tinyfilemanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
+          [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
           
           uci commit
           exit 0
