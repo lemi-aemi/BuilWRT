@@ -216,6 +216,18 @@ jobs:
           CONFIG_PACKAGE_luci=y
           CONFIG_PACKAGE_luci-app-mwan3=y
           CONFIG_PACKAGE_luci-app-ttyd=y
+
+          # Wireless & Drivers
+          CONFIG_PACKAGE_kmod-mt7921e=y
+          CONFIG_PACKAGE_mt7921bt-firmware=y
+          CONFIG_PACKAGE_wpad-openssl=y
+          CONFIG_PACKAGE_kmod-iwlwifi=y
+          CONFIG_PACKAGE_iwlwifi-firmware-ax200=y
+
+          # Driver WiFi Qualcomm QCA9882 (ath10k) 
+          CONFIG_PACKAGE_kmod-ath10k=y
+          CONFIG_PACKAGE_ath10k-firmware-qca988x=y
+          CONFIG_PACKAGE_kmod-ath10k-ct=n
           
           # Driver LAN & Bridge (Lengkap sesuai request)
           CONFIG_PACKAGE_kmod-igc=y
@@ -255,6 +267,18 @@ jobs:
           CONFIG_PACKAGE_luci-app-lite-watchdog=y
           CONFIG_PACKAGE_apcontroller=y
           CONFIG_PACKAGE_luci-app-netspeedtest=y
+          CONFIG_PACKAGE_luci-app-adblock-plus=y
+          CONFIG_PACKAGE_luci-app-statistics=y
+          CONFIG_PACKAGE_luci-app-openvpn=y
+          CONFIG_PACKAGE_luci-app-wireguard=y
+          CONFIG_PACKAGE_luci-app-autoreboot=y
+          CONFIG_PACKAGE_luci-app-internet-detector=y
+          CONFIG_PACKAGE_luci-app-speedtest-cpp=y
+          CONFIG_PACKAGE_luci-app-samba4=y
+          CONFIG_PACKAGE_luci-app-tinyfilemanager=y
+          CONFIG_PACKAGCONFIG_PACKAGE_usbutils=y
+          E_pciutils=y
+          
           EOF
           
           # Merged sisanya dari config user
