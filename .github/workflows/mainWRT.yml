@@ -25,16 +25,16 @@ jobs:
 
       - name: Cleanup Disk Space
         run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/lib/node_modules
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/lib/node_modules /opt/hostedtoolcache
           sudo docker image prune --all --force
           sudo apt-get clean
           df -h
-
       - name: Prepare Environment
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
+          gettext git libncurses5-dev libncurses6 libssl-dev python3-distutils rsync unzip zlib1g-dev \
+          libncurses-dev zstd swig python3-setuptools glibssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
 
       - name: Clone OpenWrt 25.12 & Custom Branding
         run: |
@@ -336,6 +336,7 @@ jobs:
       - name: Build Firmware
         run: |
           cd openwrt
+          # Mencoba build paralel, jika gagal otomatis ganti ke single-thread dengan log detail (V=s)
           make -j$(nproc) -k || make -j1 V=s -k
 
       - name: Upload Artifact
