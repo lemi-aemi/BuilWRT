@@ -70,7 +70,7 @@ jobs:
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
           git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
-		  git clone --depth 1 https://github.com/derisamedia/luci-theme-alpha-reborn.git
+          git clone --depth 1 https://github.com/derisamedia/luci-theme-alpha-reborn.git
 
              
           cd ..
