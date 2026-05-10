@@ -62,7 +62,6 @@ jobs:
           git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
           git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
           git clone --depth 1 https://github.com/obsy/apcontroller.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-atcommands.git
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
           git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
           git clone --depth 1 https://github.com/4IceG/luci-app-sms-manager.git
@@ -71,6 +70,8 @@ jobs:
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
           git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
+		      git clone --depth 1 https://github.com/derisamedia/luci-theme-alpha-reborn.git
+
              
           cd ..
           # Install Feeds Tambahan & Dependencies
@@ -129,7 +130,7 @@ jobs:
           libubox20260213 libubus-lua libubus20251202 libuci20250120 libuclient20201210 libucode20230711 \
           libudebug libudev-zero libusb-1.0-0 libustream-openssl20201210 libuuid1 libxml2-16 libxtables12 \
           lm-sensors logd lsblk lua lua-bit32 lua-rs232 luasocket luci luci-app-3ginfo-lite \
-          luci-app-argon-config luci-app-arwi-dashboard luci-app-attendedsysupgrade luci-app-cpulimit \
+          luci-app-argon-config luci-app-alpha-config luci-theme-alpha luci-app-arwi-dashboard luci-app-attendedsysupgrade luci-app-cpulimit \
           luci-app-diskman luci-app-firewall luci-app-gpoint luci-app-imei-changer luci-app-lite-watchdog \
           luci-app-modemband luci-app-modemdata luci-app-mwan3 luci-app-nlbwmon luci-app-package-manager \
           luci-app-sms-manager luci-base luci-compat luci-i18n-attendedsysupgrade-zh-cn luci-i18n-base-zh-cn \
@@ -152,9 +153,9 @@ jobs:
           usbids usbutils usign webconsole wifi-scripts wireless-regdb wpad-openssl wwan xtables-nft \
           zlib zoneinfo-core ttyd luci-app-ttyd luci-app-openvpn luci-app-wireguard luci-app-speedtest-cpp \
           wget-ssl nano-full luci-app-netspeedtest luci-app-poweroffdevice luci-app-statistics \
-          luci-app-adguardhome luci-app-adblock-plus kmod-rtl8821au rtl8821au-firmware \
+          luci-app-adguardhome luci-app-adblock-plus kmod-rtl8821au rtl8821au-firmware phytool zabbix-extra-mac8021 \
           luci-app-usb-printer luci-app-samba4 luci-app-mini-diskmanager luci-app-filebrowser \
-          apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store
+          apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store luci-app-atinout luci-app-modemband luci-app-modemdata \
           
 
       - name: Inject Custom DNA (Ultimate Branding & Layout)
@@ -242,12 +243,13 @@ jobs:
           # MODEM Group
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
-          [ -f /usr/share/luci/menu.d/luci-app-atcommands.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atcommands.json
           [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
           [ -f /usr/share/luci/menu.d/luci-app-sms-manager.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-manager.json
           [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
           [ -f /usr/share/luci/menu.d/luci-app-modemdata.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemdata.json
           [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
+          [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
+          [ -f /usr/share/luci/menu.d/luci-app-modemdata.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemdata.json
 
           # 3. DNS
           [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
@@ -357,6 +359,18 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mac80211=y" >> .config
           echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
           echo "CONFIG_PACKAGE_nano=y" >> .config
+          echo "CONFIG_PACKAGE_pciutils=y" >> .config
+          echo "CONFIG_PACKAGE_libkmod=y" >> .config
+          echo "CONFIG_PACKAGE_libpci=y" >> .config
+          echo "CONFIG_PACKAGE_pciids=y" >> .config
+          echo "CONFIG_PACKAGE_usbutils=y" >> .config
+          echo "CONFIG_PACKAGE_wireless-regdb=y" >> .config
+		  echo "CONFIG_PACKAGE_php8=y" >> .config
+		  echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
+		  echo "CONFIG_PACKAGE_php8-mod-session=y" >> .config
+
+      
+
 
           # Wireless & Drivers
           echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
@@ -365,18 +379,52 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mt7921u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7921-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7921-firmware=y" >> .config
+          ecbho "CONFIG_PACKAGE_kmod-mt7922e=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922s=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922u=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922-firmware=y" >> .config
           echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
           echo "CONFIG_PACKAGE_kmod-iwlwifi=y" >> .config
           echo "CONFIG_PACKAGE_iwlwifi-firmware-ax200=y" >> .config
 
+
+          # Driver WiFi Qualcomm (ath9k)
+          echo "CONFIG_PACKAGE_kmod-ath9k=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-common=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-htc=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-ct=n" >> .config
+          echo "CONFIG_PACKAGE_ath9k-firmware=y" >> .config
+          echo "CONFIG_PACKAGE_ath9k-firmware-ct=y" >> .config
+          echo "CONFIG_PACKAGE_ath9k-firmware-ct-full=y" >> .config
+          echo "CONFIG_PACKAGE_ath9k-firmware-ct-full-htt=y" >>
+          echo "CONFIG_PACKAGE_ath9k-firmware-ct-full-htt-wifi3=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-ct=n" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-htc=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-ct=n" >> .config
+
+
           # Driver WiFi Qualcomm QCA9882 (ath10k) 
           echo "CONFIG_PACKAGE_kmod-ath10k=y" >> .config
           echo "CONFIG_PACKAGE_ath10k-firmware-qca988x=y" >> .config
+          echo "CONFIG_PACKAGE_ath10k-firmware-qca988x-ct=y" >> .config
+          echo "CONFIG_PACKAGE_ath10k-firmware-qca988x-ct-full=y" >> .config
+          echo "CONFIG_PACKAGE_ath10k-firmware-qca988x-ct-full-htt=y" >> .config
+          echo "CONFIG_PACKAGE_ath10k-firmware-qca988x-ct-full-htt-wifi3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath10k-ct=n" >> .config
 
           # Driver WiFi Qualcomm qcn7850 (ath12k) 
           echo "CONFIG_PACKAGE_kmod-ath12k=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850=y" >> .config
+          echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct=y" >> .config
+          echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full=y
+          echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt=y" >> .config
+          echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt-wifi3=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath12k-htc=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
+
 
           # Driver USB WiFi MT7925 (mt7925) 
           echo "CONFIG_PACKAGE_kmod-mt7925-common=y" >> .config
@@ -404,7 +452,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
@@ -421,12 +468,10 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
-          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
-
+          echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
+          
           # Custom Apps (4IceG, Obsy, JerryKuku, Sirpdboy)
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
@@ -436,6 +481,15 @@ jobs:
           echo "CONFIG_PACKAGE_apcontroller=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-filebrowser=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-poweroffdevice=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-adblock-plus=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemdata=y" >> .config
+
 
           # Driver LAN PCIe High-End (Intel Server Grade)
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
