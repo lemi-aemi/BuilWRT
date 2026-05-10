@@ -365,9 +365,6 @@ jobs:
           echo "CONFIG_PACKAGE_pciids=y" >> .config
           echo "CONFIG_PACKAGE_usbutils=y" >> .config
           echo "CONFIG_PACKAGE_wireless-regdb=y" >> .config
-		  echo "CONFIG_PACKAGE_php8=y" >> .config
-		  echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
-		  echo "CONFIG_PACKAGE_php8-mod-session=y" >> .config
 
       
 
