@@ -376,7 +376,7 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mt7921u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7921-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7921-firmware=y" >> .config
-          ecbho "CONFIG_PACKAGE_kmod-mt7922e=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922s=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
