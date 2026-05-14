@@ -38,7 +38,7 @@ jobs:
 
       - name: Clone OpenWrt 25.12.3 & Custom Branding
         run: |
-          git clone https://github.com/openwrt/openwrt.git -b v25.12.3 openwrt
+          git clone https://github.com/openwrt/openwrt.git -b v25.12.4 openwrt
           cd openwrt
           
           # CUSTOM BRANDING & LOGIN TEXT
@@ -213,7 +213,7 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].show_mac='0'
           uci set nlbwmon.@nlbwmon[0].show_hostname='1'
           uci set nlbwmon.@nlbwmon[0].show_graph='1'
-          uci set nlbwmon.@nlbwmon[0].graph_type='0
+          uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
 
           # 5. Theme Argon & Fix-Collision Setup
@@ -230,7 +230,7 @@ jobs:
           uci set argon.@global[0].custom_color_footer='#34495e'
           uci set argon.@global[0].custom_color_link='#e67e22'
           uci set argon.@global[0].custom_color_button='#e67e22'
-          uci set argon.@global[0].custom_color_button_hover='#d35400
+          uci set argon.@global[0].custom_color_button_hover='#d35400'
           
           # Optimasi ModemManager agar tidak mengunci port AT (Untuk RM520N-GL)
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
@@ -366,9 +366,6 @@ jobs:
           echo "CONFIG_PACKAGE_usbutils=y" >> .config
           echo "CONFIG_PACKAGE_wireless-regdb=y" >> .config
 
-      
-
-
           # Wireless & Drivers
           echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
           echo "CONFIG_PACKAGE_mt7921bt-firmware=y" >> .config
@@ -394,7 +391,7 @@ jobs:
           echo "CONFIG_PACKAGE_ath9k-firmware=y" >> .config
           echo "CONFIG_PACKAGE_ath9k-firmware-ct=y" >> .config
           echo "CONFIG_PACKAGE_ath9k-firmware-ct-full=y" >> .config
-          echo "CONFIG_PACKAGE_ath9k-firmware-ct-full-htt=y" >>
+          echo "CONFIG_PACKAGE_ath9k-firmware-ct-full-htt=y" >> .config
           echo "CONFIG_PACKAGE_ath9k-firmware-ct-full-htt-wifi3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath9k-ct=n" >> .config
           echo "CONFIG_PACKAGE_kmod-ath9k-htc=y" >> .config
@@ -414,7 +411,7 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-ath12k=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct=y" >> .config
-          echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full=y
+          echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt-wifi3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
@@ -434,7 +431,7 @@ jobs:
           # Driver WiFi TP-Link Archer T2U Plus 
           echo "CONFIG_PACKAGE_kmod-rtl8821au=y" >> .config
           echo "CONFIG_PACKAGE_rtl8821au-firmware=y" >> .config
-          
+
           # USB Tethering Drivers
           echo "CONFIG_PACKAGE_kmod-usb-net=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rndis=y" >> .config
@@ -468,7 +465,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
-          
+
           # Custom Apps (4IceG, Obsy, JerryKuku, Sirpdboy)
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
@@ -486,7 +483,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-modemdata=y" >> .config
-
 
           # Driver LAN PCIe High-End (Intel Server Grade)
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
