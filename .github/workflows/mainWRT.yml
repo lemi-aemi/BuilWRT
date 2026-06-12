@@ -457,5 +457,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LemWRT-UltraPro-Final-10052026
+          name: LemWRT-UltraPro-Final-12062026
           path: openwrt/bin/targets/x86/64/*img.gz
