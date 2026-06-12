@@ -59,8 +59,8 @@ jobs:
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
           git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
           git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
+          #git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
+          #git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
           git clone --depth 1 https://github.com/obsy/apcontroller.git
           git clone --depth 1 https://github.com/4IceG/luci-app-atcommands.git
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
@@ -131,14 +131,14 @@ jobs:
           lm-sensors logd lsblk lua lua-bit32 lua-rs232 luasocket luci luci-app-3ginfo-lite \
           luci-app-argon-config luci-app-arwi-dashboard luci-app-attendedsysupgrade luci-app-cpulimit \
           luci-app-diskman luci-app-firewall luci-app-gpoint luci-app-imei-changer luci-app-lite-watchdog \
-          luci-app-modemband luci-app-modemdata luci-app-mwan3 luci-app-nlbwmon luci-app-package-manager \
+          luci-app-mwan3 luci-app-nlbwmon luci-app-package-manager \
           luci-app-sms-manager luci-base luci-compat luci-i18n-attendedsysupgrade-zh-cn luci-i18n-base-zh-cn \
-          luci-i18n-cpulimit-zh-cn luci-i18n-firewall-zh-cn luci-i18n-modemband-zh-cn \
+          luci-i18n-cpulimit-zh-cn luci-i18n-firewall-zh-cn \
           luci-i18n-package-manager-zh-cn luci-lib-base luci-lib-chartjs luci-lib-ip luci-lib-ipkg \
           luci-lib-jsonc luci-lib-nixio luci-lib-uqr luci-light luci-lua-runtime luci-mod-admin-full \
           luci-mod-network luci-mod-status luci-mod-system luci-proto-external luci-proto-ipv6 \
           luci-proto-mbim luci-proto-modemmanager luci-proto-ppp luci-proto-qmi luci-proto-quectel \
-          luci-theme-4lpha luci-theme-argon luci-theme-bootstrap mdadm mkf2fs modemband modemdata \
+          luci-theme-4lpha luci-theme-argon luci-theme-bootstrap mdadm mkf2fs \
           modemmanager mt7921bt-firmware mt7922bt-firmware mt7925bt-firmware mt7981-wo-firmware \
           mt7986-wo-firmware mt7987-2p5g-phy-firmware mt7988-2p5g-phy-firmware mt7988-wo-firmware \
           mtd mwan3 nano netifd nftables-json nlbwmon ntfs3-mount odhcp6c odhcpd-ipv6only openwrt-keyring \
