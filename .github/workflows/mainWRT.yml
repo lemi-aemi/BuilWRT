@@ -57,12 +57,12 @@ jobs:
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
+          git clone --depth 1 https://github.com/derisamedia/luci-theme-alpha-reborn.git
           git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
           git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
-          #git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
-          #git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
           git clone --depth 1 https://github.com/obsy/apcontroller.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-atcommands.git
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
           git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
           git clone --depth 1 https://github.com/4IceG/luci-app-sms-manager.git
@@ -70,7 +70,7 @@ jobs:
           git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
-          git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
+          git clone --depth 1 --branch 1.2.0-APK https://github.com/derisamedia/luci-app-arwi-dashboard.git
 
           cd ..
           # Install Feeds Tambahan & Dependencies
@@ -209,7 +209,10 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].show_graph='1'
           uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
-          # 5. Theme Argon & Fix-Collision Setup
+          # 5. Theme Default: 4lpha (Argon tetap terpasang sebagai pilihan alternatif)
+          uci set luci.main.mediaurlbase='/luci-static/luci-theme-4lpha'
+          uci commit luci
+          # 5a. Theme Argon & Fix-Collision Setup (opsional, tetap dikonfigurasi jika ingin dipakai)
           uci set argon.@global[0].login_footer='LemWRT: High Performance Network'
           uci set argon.@global[0].bing_background='1'
           uci set argon.@global[0].theme_compatibility_mode='1'
@@ -234,7 +237,6 @@ jobs:
           # MODEM Group
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
-          [ -f /usr/share/luci/menu.d/luci-app-atcommands.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atcommands.json
           [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
           [ -f /usr/share/luci/menu.d/luci-app-sms-manager.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-manager.json
           [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
@@ -404,10 +406,11 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemdata=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-4lpha=y" >> .config
           echo "CONFIG_PACKAGE_socat=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
@@ -418,6 +421,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
           # Custom Apps (4IceG, Obsy, JerryKuku, Sirpdboy)
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
