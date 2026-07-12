@@ -376,7 +376,17 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925s=y" >> .config
-          echo "CONFIG_PACKAGE_mt7925bt-firmware=y" >> .config
+          # Driver USB WiFi MT7922 (mt7922) 
+          echo "CONFIG_PACKAGE_kmod-mt7921-common=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7921-firmware=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7921u=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7921s=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922-firmware=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922e=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922u=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7922s=y" >> .config
           # Driver WiFi TP-Link Archer T2U Plus 
           echo "CONFIG_PACKAGE_kmod-rtl8821au=y" >> .config
           echo "CONFIG_PACKAGE_rtl8821au-firmware=y" >> .config
