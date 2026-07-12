@@ -39,15 +39,15 @@ jobs:
           # Clone dari branch utama (main) untuk mendapatkan versi Snapshots terbaru
           git clone https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
-          
+
           # CUSTOM BRANDING & LOGIN TEXT
           sed -i 's/OpenWrt/LemWRT/g' include/target.mk
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
-          
+
           # Mengubah teks versi agar sesuai dengan penamaan Snapshots dan Kernel target Anda
-          echo "LemWRT Snapshots (Kernel 6.18.34)" > package/base-files/files/etc/openwrt_version
-          
+          echo "LemWRT Snapshots (Kernel 6.18.38)" > package/base-files/files/etc/openwrt_version
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
       - name: Add Custom Apps & Themes
@@ -71,7 +71,7 @@ jobs:
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
           git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
-             
+
           cd ..
           # Install Feeds Tambahan & Dependencies
           ./scripts/feeds install airoha-en7581-mt7996-npu-firmware apk-openssl ath12k-firmware-qcn9274 \
@@ -155,7 +155,7 @@ jobs:
           luci-app-adguardhome luci-app-adblock-plus kmod-rtl8821au rtl8821au-firmware \
           luci-app-usb-printer luci-app-samba4 luci-app-mini-diskmanager luci-app-filebrowser \
           apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store
-          
+
       - name: Inject Custom DNA (Ultimate Branding & Layout)
         run: |
           cd openwrt
@@ -164,7 +164,7 @@ jobs:
           #!/bin/sh
           # 1. Identitas
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
-          echo "mi1003\nmi1003" | passwd root
+          (echo 'mi1003'; echo 'mi1003') | passwd root
           # 2. Universal Bridge LAN
           uci delete network.lan
           uci set network.lan=interface
@@ -207,7 +207,7 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].show_mac='0'
           uci set nlbwmon.@nlbwmon[0].show_hostname='1'
           uci set nlbwmon.@nlbwmon[0].show_graph='1'
-          uci set nlbwmon.@nlbwmon[0].graph_type='0
+          uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
           # 5. Theme Argon & Fix-Collision Setup
           uci set argon.@global[0].login_footer='LemWRT: High Performance Network'
@@ -223,8 +223,8 @@ jobs:
           uci set argon.@global[0].custom_color_footer='#34495e'
           uci set argon.@global[0].custom_color_link='#e67e22'
           uci set argon.@global[0].custom_color_button='#e67e22'
-          uci set argon.@global[0].custom_color_button_hover='#d35400
-          
+          uci set argon.@global[0].custom_color_button_hover='#d35400'
+
           # Optimasi ModemManager agar tidak mengunci port AT (Untuk RM520N-GL)
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
@@ -243,11 +243,11 @@ jobs:
           # 3. DNS
           [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
           [ -f /usr/share/luci/menu.d/luci-app-adblock-plus.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adblock-plus.json
-          
+
           # 4. VPN
           [ -f /usr/share/luci/menu.d/luci-app-openvpn.json ] && sed -i 's/"admin\/services"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-openvpn.json
           [ -f /usr/share/luci/menu.d/luci-app-wireguard.json ] && sed -i 's/"admin\/network"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-wireguard.json
-          
+
           # 5. WIFI
           [ -f /usr/share/luci/menu.d/luci-base.json ] && sed -i 's/"admin\/network\/wireless"/"admin\/wifi"/g' /usr/share/luci/menu.d/luci-base.json
           [ -f /usr/share/luci/menu.d/apcontroller.json ] && sed -i 's/"admin\/network"/"admin\/wifi"/g' /usr/share/luci/menu.d/apcontroller.json
@@ -355,12 +355,19 @@ jobs:
           echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
           echo "CONFIG_PACKAGE_kmod-iwlwifi=y" >> .config
           echo "CONFIG_PACKAGE_iwlwifi-firmware-ax200=y" >> .config
-          # Driver WiFi Qualcomm QCA9882 (ath10k) 
+          # Driver WiFi Qualcomm QCA9882 (ath10k, chip family QCA988x)
           echo "CONFIG_PACKAGE_kmod-ath10k=y" >> .config
           echo "CONFIG_PACKAGE_ath10k-firmware-qca988x=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath10k-ct=n" >> .config
-          # Driver WiFi Qualcomm qcn7850 (ath12k) 
+          # Driver WiFi Atheros/Qualcomm ATH9K (legacy 802.11n PCI/PCIe cards)
+          echo "CONFIG_PACKAGE_kmod-ath9k=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-common=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ath9k-htc=y" >> .config
+          echo "CONFIG_PACKAGE_ath9k-htc-firmware=y" >> .config
+          # Driver WiFi Qualcomm ATH12K - chip QCN9274 (WiFi 7, PCIe)
           echo "CONFIG_PACKAGE_kmod-ath12k=y" >> .config
+          echo "CONFIG_PACKAGE_ath12k-firmware-qcn9274=y" >> .config
+          # Driver WiFi Qualcomm ATH12K - chip WCN7850 (WiFi 7, PCIe, sering disebut qcn7850 di pasaran)
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full=y" >> .config
@@ -368,29 +375,22 @@ jobs:
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt-wifi3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-htc=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
-          echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
-          # Driver USB WiFi MT7925 (mt7925) 
+          # Driver WiFi MediaTek MT7925 - varian PCIe & USB
           echo "CONFIG_PACKAGE_kmod-mt7925-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925-firmware=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925s=y" >> .config
-          # Driver USB WiFi MT7922 (mt7922) 
-          echo "CONFIG_PACKAGE_kmod-mt7921-common=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-mt7921-firmware=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-mt7921u=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-mt7921s=y" >> .config
+          # Driver USB WiFi MT7922 (mt7922)
           echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922-firmware=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922s=y" >> .config
-          # Driver WiFi TP-Link Archer T2U Plus 
+          # Driver WiFi TP-Link Archer T2U Plus
           echo "CONFIG_PACKAGE_kmod-rtl8821au=y" >> .config
           echo "CONFIG_PACKAGE_rtl8821au-firmware=y" >> .config
-          
+
           # USB Tethering Drivers
           echo "CONFIG_PACKAGE_kmod-usb-net=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rndis=y" >> .config
@@ -414,17 +414,10 @@ jobs:
           # Driver & Apps Lainnya
           echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adblock-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-atcommands=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
-          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
           # Custom Apps (4IceG, Obsy, JerryKuku, Sirpdboy)
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
@@ -433,7 +426,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
           echo "CONFIG_PACKAGE_apcontroller=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
           # Driver LAN PCIe High-End (Intel Server Grade)
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
           echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
@@ -442,8 +434,6 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igc=y" >> .config
           echo "CONFIG_PACKAGE_kmod-r8169=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
           # RM520N / 5G Support
           echo "CONFIG_PACKAGE_kmod-mhi-bus=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mhi-net=y" >> .config
@@ -457,7 +447,7 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-usb-serial=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-serial-option=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y" >> .config 
+          echo "CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y" >> .config
           make defconfig
       - name: Build Firmware
         run: |
@@ -467,5 +457,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LemWRT-UltraPro-Final-12062026
-          path: openwrt/bin/targets/x86/64/*img.gz
+          name: LemWRT-UltraPro-Final-12072026
+          path: openwrt/bin/targets/x86/64/*.img.gz
