@@ -57,7 +57,7 @@ jobs:
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
-          git clone --depth 1 https://github.com/derisamedia/luci-theme-alpha-reborn.git
+          git clone --depth 1 https://github.com/derisamedia/luci-theme-arwi.git
           git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
           git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
           #git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
@@ -154,10 +154,10 @@ jobs:
           ucode-mod-uclient ucode-mod-uloop uhttpd uhttpd-mod-ubus umbim uqmi urandom-seed urngd \
           usbids usbutils usign webconsole wifi-scripts wireless-regdb wpad-openssl wwan xtables-nft \
           zlib zoneinfo-core ttyd luci-app-ttyd luci-app-openvpn luci-app-wireguard luci-app-speedtest-cpp \
-          wget-ssl nano-full luci-app-netspeedtest luci-app-poweroffdevice luci-app-statistics \
+          wget-ssl nano-full luci-app-netspeedtest luci-app-poweroffdevice luci-theme-arwi luci-app-statistics \
           luci-app-adguardhome luci-app-adblock-plus kmod-rtl8821au rtl8821au-firmware \
           luci-app-usb-printer luci-app-samba4 luci-app-mini-diskmanager luci-app-filebrowser \
-          apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store
+          apcontroller luci-app-poweroff luci-app-internet-detector luci-app-store 
 
       - name: Inject Custom DNA (Ultimate Branding & Layout)
         run: |
@@ -386,6 +386,15 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925s=y" >> .config
+
+          # Driver WiFi MediaTek MT7927 - WiFi 7 / Filogic 380
+          # MT7927 menggunakan driver keluarga mt7925/mt7925e di mt76.
+          # Firmware Bluetooth dipasang sebagai dependency tambahan.
+          echo "CONFIG_PACKAGE_kmod-mt7925-common=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7925-firmware=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-mt792x-common=y" >> .config
+          echo "CONFIG_PACKAGE_mt7925bt-firmware=y" >> .config
           # Driver USB WiFi MT7922 (mt7922)
           echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922-firmware=y" >> .config
