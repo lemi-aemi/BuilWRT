@@ -46,7 +46,7 @@ jobs:
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
 
           # Mengubah teks versi agar sesuai dengan penamaan Snapshots dan Kernel target Anda
-          echo "LemWRT Snapshots (Kernel 6.18.38)" > package/base-files/files/etc/openwrt_version
+          echo "LemWRT Snapshots (Kernel 6.18.44)" > package/base-files/files/etc/openwrt_version
 
           ./scripts/feeds update -a
           ./scripts/feeds install -a
