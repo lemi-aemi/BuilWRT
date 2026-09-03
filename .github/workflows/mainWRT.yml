@@ -473,8 +473,11 @@ jobs:
           cd openwrt
           # Menggunakan -k agar build x86_64 tetap selesai meskipun ada paket incompatible
           make -j$(nproc) -k || make -j1 V=s -k
+      - name: Set Build Date
+        id: date
+        run: echo "date=$(date +'%d%m%Y')" >> "$GITHUB_OUTPUT"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LemWRT-UltraPro-Final-12072026
+          name: LemWRT-UltraPro_${{ steps.date.outputs.date }}
           path: openwrt/bin/targets/x86/64/*.img.gz
