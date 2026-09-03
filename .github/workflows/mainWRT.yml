@@ -54,6 +54,9 @@ jobs:
         run: |
           cd openwrt/package
           # Integrasi Repository Eksternal
+          git clone --depth 1 https://github.com/lemi-aemi/build-apk.yml.git /tmp/lemi-imei-repo
+          cp -a /tmp/lemi-imei-repo/luci-app-imei-changer .
+          rm -rf /tmp/lemi-imei-repo
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
@@ -434,6 +437,11 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
+
+          # LuCI IMEI Changer dari repository LemiAemi
+          # Package ini mendukung RM520N & DW5821e dan membutuhkan atinout.
+          echo "CONFIG_PACKAGE_luci-app-imei-changer=y" >> .config
+          echo "CONFIG_PACKAGE_atinout=y" >> .config
           # Tiny File Manager (muink wrapper for prasathmani/tinyfilemanager) + dependensi PHP8
           echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
           echo "CONFIG_PACKAGE_php8=y" >> .config
