@@ -100,6 +100,11 @@ jobs:
           mkdir -p files/tmp
           wget -O files/tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk https://github.com/derisamedia/luci-theme-arwi/releases/download/v4.2.3_beta2/luci-theme-Arwi-4.2.3_beta2-r1.apk
 
+          # Download Berkas Firmware MediaTek MT7927 / MT6639
+          mkdir -p files/lib/firmware/mediatek/mt7927/
+          wget -O files/lib/firmware/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin"
+          wget -O files/lib/firmware/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin"
+
           # Install Feeds Tambahan & Dependencies
           ./scripts/feeds install airoha-en7581-mt7996-npu-firmware apk-openssl ath12k-firmware-qcn9274 \
           ath12k-firmware-wcn7850 ath9k-htc-firmware attendedsysupgrade-common base-files blkid block-mount \
@@ -420,19 +425,15 @@ jobs:
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt-wifi3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-htc=y" >> .config
-          # Driver WiFi MediaTek MT7925
+          # Driver WiFi MediaTek MT7925 & MT7927
           echo "CONFIG_PACKAGE_kmod-mt7925-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925-firmware=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925s=y" >> .config
-
-          # Driver WiFi MediaTek MT7927
-          echo "CONFIG_PACKAGE_kmod-mt7925-common=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-mt7925-firmware=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt792x-common=y" >> .config
           echo "CONFIG_PACKAGE_mt7925bt-firmware=y" >> .config
+
           # Driver USB WiFi MT7922
           echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922-firmware=y" >> .config
