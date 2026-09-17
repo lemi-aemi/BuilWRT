@@ -68,13 +68,11 @@ jobs:
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
 
-          # Clone QuickStart Dashboard & iStore Ecosystem (Kiddin9 / Kwrt UI)
+          # Clone QuickStart Dashboard & iStore Ecosystem (Linkease / Kiddin9 / Kwrt UI)
           git clone --depth 1 https://github.com/linkease/istore.git
           git clone --depth 1 https://github.com/linkease/istore-ui.git
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
-          git clone --depth 1 https://github.com/jjm2473/luci-app-quickstart.git
-          git clone --depth 1 https://github.com/jjm2473/openwrt-quickstart.git
 
           # Clone TinyFileManager (prasathmani/tinyfilemanager via LuCI package)
           git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git 2>/dev/null || true
@@ -444,10 +442,9 @@ jobs:
           echo "CONFIG_PACKAGE_r8152-firmware=y" >> .config
 
           # Kwrt UI / QuickStart Dashboard Ecosystem
-          echo "CONFIG_PACKAGE_quickstart=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
-          echo "CONFIG_PACKAGE_luci-theme-kiddin9=y" >> .config
           echo "CONFIG_PACKAGE_istore=y" >> .config
+          echo "CONFIG_PACKAGE_istore-ui=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-kiddin9=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
 
           # Apps & NAS
