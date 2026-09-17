@@ -384,7 +384,7 @@ jobs:
           echo "CONFIG_PACKAGE_nlbwmon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
 
-          # USB Tethering & USB Serial Drivers
+          # USB Tethering & USB LAN Drivers (Termasuk RTL8156 / RTL8152 2.5G/5G)
           echo "CONFIG_PACKAGE_kmod-usb-net=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rndis=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-cdc-ether=y" >> .config
@@ -392,6 +392,11 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-usb-acm=y" >> .config
           echo "CONFIG_PACKAGE_usbmuxd=y" >> .config
           echo "CONFIG_PACKAGE_libimobiledevice=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152-vendor=y" >> .config
+          echo "CONFIG_PACKAGE_r8152-firmware=y" >> .config
+
           # Apps & NAS
           echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-filebrowser=y" >> .config
@@ -402,9 +407,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
           echo "CONFIG_PACKAGE_socat=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
-          # Driver & Apps Lainnya
-          echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
-          echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adblock-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
@@ -445,14 +447,15 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
           echo "CONFIG_PACKAGE_apcontroller=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
-          # Driver LAN PCIe High-End (Intel Server Grade)
+          # Driver LAN PCIe High-End (Intel Server Grade & Realtek 2.5G/10G)
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
           echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-forcedeth=y" >> .config
-          # Hardware Support (Intel/Realtek)
           echo "CONFIG_PACKAGE_kmod-igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igc=y" >> .config
           echo "CONFIG_PACKAGE_kmod-r8169=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-r8125=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-r8126=y" >> .config
 
           # Modem PCIe MHI Suite (Full 5G M.2 PCIe Support)
           echo "CONFIG_PACKAGE_kmod-mhi-bus=y" >> .config
