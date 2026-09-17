@@ -66,14 +66,14 @@ jobs:
           rm -rf /tmp/lemi-imei-repo
 
           # 2. Bandix Plus Traffic Monitoring
-          git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
-          git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
+          git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git 2>/dev/null || true
+          git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git 2>/dev/null || true
 
           # 3. iStore & Linkease Ecosystem (Termasuk QuickStart Kwrt UI)
-          git clone --depth 1 https://github.com/linkease/istore.git
-          git clone --depth 1 https://github.com/linkease/istore-ui.git
-          git clone --depth 1 https://github.com/linkease/nas-packages.git
-          git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
+          git clone --depth 1 https://github.com/linkease/istore.git 2>/dev/null || true
+          git clone --depth 1 https://github.com/linkease/istore-ui.git 2>/dev/null || true
+          git clone --depth 1 https://github.com/linkease/nas-packages.git 2>/dev/null || true
+          git clone --depth 1 https://github.com/linkease/nas-packages-luci.git 2>/dev/null || true
 
           # 4. TinyFileManager & Docker Manager UI
           git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git 2>/dev/null || true
@@ -358,7 +358,8 @@ jobs:
       - name: Build Firmware
         run: |
           cd openwrt
-          make -j$(nproc) || make -j1 V=s
+          # Perintah resmi OpenWrt (-k) agar build terus berjalan hingga selesai
+          make -j$(nproc) -k || make -j1 V=s -k
 
       - name: Set Build Date
         id: date
