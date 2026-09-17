@@ -46,7 +46,8 @@ jobs:
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
 
-          echo "LemWRT Snapshots (Kernel 6.18.44-0b5a9c322f)" > package/base-files/files/etc/openwrt_version
+          # LOCK TARGET KERNEL SNAPSHOT VERSION
+          echo "LemWRT Snapshots (Kernel 6.18.52-1-0b5a9c322f5b9a40fe5a97451f6e9c58)" > package/base-files/files/etc/openwrt_version
 
       - name: Add Custom Apps & Themes
         run: |
@@ -67,11 +68,22 @@ jobs:
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
 
-          # Clone QuickStart & iStore Ecosystem (Kiddin9 / linkease)
+          # Clone QuickStart Dashboard & iStore Ecosystem (Kiddin9 / Kwrt UI)
           git clone --depth 1 https://github.com/linkease/istore.git
           git clone --depth 1 https://github.com/linkease/istore-ui.git
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
+          git clone --depth 1 https://github.com/jjm2473/luci-app-quickstart.git
+          git clone --depth 1 https://github.com/jjm2473/openwrt-quickstart.git
+
+          # Clone TinyFileManager (prasathmani/tinyfilemanager via LuCI package)
+          git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git 2>/dev/null || true
+
+          # Clone Docker UI (Dockerman)
+          git clone --depth 1 https://github.com/lisaac/luci-app-dockerman.git 2>/dev/null || true
+
+          # Clone Tema Kwrt / Kiddin9 Dashboard Theme
+          git clone --depth 1 https://github.com/kiddin9/luci-theme-kiddin9.git 2>/dev/null || true
 
           # Clone 5G Modem App & Custom Apps Lainnya
           git clone --depth 1 https://github.com/fildunsky/luci-app-5gmodem.git
@@ -89,8 +101,6 @@ jobs:
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
           git clone --depth 1 --branch 1.2.0-APK https://github.com/derisamedia/luci-app-arwi-dashboard.git
-          git clone --depth 1 --branch master --single-branch --no-checkout https://github.com/muink/luci-app-tinyfilemanager.git luci-app-tinyfilemanager
-          (cd luci-app-tinyfilemanager && umask 022 && git checkout master)
 
           # Download Pre-built APK Tema Arwi v4.2.3_beta2
           cd ..
@@ -102,7 +112,7 @@ jobs:
           wget -O files/lib/firmware/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin"
           wget -O files/lib/firmware/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin"
 
-          # Update & Install Feeds Global (Bersih tanpa Warning)
+          # Update & Install Feeds Global
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
@@ -166,9 +176,13 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].show_graph='1'
           uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
-          # 5. Theme Default: 4lpha (Arwi & Argon tetap terpasang sebagai pilihan alternatif)
-          uci set luci.main.mediaurlbase='/luci-static/luci-theme-4lpha'
+          
+          # 5. Set Default Theme ke QuickStart / Kwrt UI
+          if [ -d /usr/share/luci/menu.d/luci-app-quickstart.json ]; then
+            uci set luci.main.mediaurlbase='/luci-static/quickstart' 2>/dev/null || true
+          fi
           uci commit luci
+
           # 5a. Theme Argon & Fix-Collision Setup
           uci set argon.@global[0].login_footer='LemWRT: High Performance Network'
           uci set argon.@global[0].bing_background='1'
@@ -221,6 +235,7 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-samba4.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-samba4.json
           [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
           [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
+          [ -f /usr/share/luci/menu.d/luci-app-tinyfilemanager.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
           uci commit
           exit 0
           EOF
@@ -380,6 +395,37 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-md-raid1=y" >> .config
           echo "CONFIG_PACKAGE_kmod-md-raid10=y" >> .config
 
+          # Docker Suite & Kernel Dependencies (Image Support Fix)
+          echo "CONFIG_PACKAGE_dockerd=y" >> .config
+          echo "CONFIG_PACKAGE_docker=y" >> .config
+          echo "CONFIG_PACKAGE_docker-compose=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-dockerman=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-veth=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nf-ipvs=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ikconfig=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-fs-btrfs=y" >> .config
+          echo "CONFIG_PACKAGE_btrfs-progs=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-fs-overlayfs=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ipt-extra=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ipt-nat=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ipt-nat6=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-ipt-physdev=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-compat=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-nat=y" >> .config
+
+          # Tiny File Manager (Single-file PHP File Manager Core + PHP8 Suite)
+          echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
+          echo "CONFIG_PACKAGE_php8=y" >> .config
+          echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-ctype=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-fileinfo=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-iconv=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-json=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-mbstring=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-session=y" >> .config
+          echo "CONFIG_PACKAGE_php8-mod-zip=y" >> .config
+          echo "CONFIG_PACKAGE_uhttpd=y" >> .config
+
           # Bandwidth & Traffic Monitoring (NLBWMON)
           echo "CONFIG_PACKAGE_nlbwmon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
@@ -396,6 +442,13 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152-vendor=y" >> .config
           echo "CONFIG_PACKAGE_r8152-firmware=y" >> .config
+
+          # Kwrt UI / QuickStart Dashboard Ecosystem
+          echo "CONFIG_PACKAGE_quickstart=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-kiddin9=y" >> .config
+          echo "CONFIG_PACKAGE_istore=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
 
           # Apps & NAS
           echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
@@ -417,29 +470,12 @@ jobs:
           echo "CONFIG_PACKAGE_openwrt-bandix-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-bandix-plus=y" >> .config
 
-          # QuickStart / iStore Ecosystem
-          echo "CONFIG_PACKAGE_quickstart=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
-
           # LuCI 5G Modem & IMEI Changer
           echo "CONFIG_PACKAGE_luci-app-5gmodem=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-imei-changer=y" >> .config
           echo "CONFIG_PACKAGE_sms-tool=y" >> .config
           echo "CONFIG_PACKAGE_atinout=y" >> .config
           
-          # Tiny File Manager + dependensi PHP8
-          echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
-          echo "CONFIG_PACKAGE_php8=y" >> .config
-          echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-ctype=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-fileinfo=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-iconv=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-json=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-mbstring=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-session=y" >> .config
-          echo "CONFIG_PACKAGE_php8-mod-zip=y" >> .config
-          echo "CONFIG_PACKAGE_uhttpd=y" >> .config
           # Custom Apps
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-manager=y" >> .config
