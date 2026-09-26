@@ -26,7 +26,6 @@ jobs:
       - name: Cleanup Disk Space
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/local/lib/node_modules
-          sudo docker image prune --all --force
           sudo apt-get clean
           df -h
 
@@ -36,15 +35,16 @@ jobs:
           sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
 
-      - name: Clone OpenWrt Stable 25.12.5 & Custom Branding
+      - name: Clone OpenWrt LemWRT Snapshots Kernel 6.18.52-1 & Custom Branding
         run: |
-          git clone --branch v25.12.5 --single-branch https://github.com/openwrt/openwrt.git openwrt
+          git clone https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
           # CUSTOM BRANDING & LOGIN TEXT
           sed -i 's/OpenWrt/LemWRT/g' include/target.mk
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
-          echo "LemWRT Stable 25.12.5" > package/base-files/files/etc/openwrt_version
+          # LOCK TARGET KERNEL SNAPSHOT VERSION
+          echo "LemWRT Snapshots (Kernel 6.18.52-1-765b66c0498f1e672977ffa7bee0a0c8)" > package/base-files/files/etc/openwrt_version
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
@@ -67,41 +67,77 @@ jobs:
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
 
-          # Clone QuickStart & iStore Ecosystem (Kiddin9 / linkease)
+          # Clone Ekosistem iStore & NAS Packages
           git clone --depth 1 https://github.com/linkease/istore.git
           git clone --depth 1 https://github.com/linkease/istore-ui.git
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
 
-          # Clone 5G Modem App & Custom Apps Lainnya
-          git clone --depth 1 https://github.com/fildunsky/luci-app-5gmodem.git
+          # Clone 5G Modem Apps dari 4IceG & Repositori Lainnya
+          git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-sms-tool-js.git
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-sms-manager.git
+          git clone --depth 1 https://github.com/4IceG/luci-app-lite-watchdog.git
+
+          git clone --depth 1 https://github.com/fildunsky/luci-app-5gmodem.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
           git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
           git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
           git clone --depth 1 https://github.com/obsy/apcontroller.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-sms-manager.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-lite-watchdog.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
-          git clone --depth 1 --branch 1.2.0-APK https://github.com/derisamedia/luci-app-arwi-dashboard.git
           git clone --depth 1 --branch master --single-branch --no-checkout https://github.com/muink/luci-app-tinyfilemanager.git luci-app-tinyfilemanager
           (cd luci-app-tinyfilemanager && umask 022 && git checkout master)
 
-          # Download Pre-built APK Tema Arwi v4.2.3_beta2
-          cd ..
+      - name: Inject Hybrid Pre-built Packages, Repo Keys & Firmware Assets
+        run: |
+          cd openwrt
           mkdir -p files/tmp
+          mkdir -p files/etc/opkg/keys/
+
+          # Download & Extract Pre-built IPK QuickStart (animegasan v1.0.2)
+          mkdir -p /tmp/quickstart_extract
+          wget -O /tmp/quickstart_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
+          wget -O /tmp/quickstart_extract/quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/quickstart_0.7.12-60_x86_64.ipk
+
+          # Ekstrak data.tar.gz / data.tar.zst langsung ke direktori rootfs openwrt/files/
+          for ipk in /tmp/quickstart_extract/*.ipk; do
+            tar -xzf "$ipk" -C /tmp/quickstart_extract/
+            if [ -f /tmp/quickstart_extract/data.tar.gz ]; then
+              tar -xzf /tmp/quickstart_extract/data.tar.gz -C files/
+            elif [ -f /tmp/quickstart_extract/data.tar.zst ]; then
+              tar --zstd -xf /tmp/quickstart_extract/data.tar.zst -C files/
+            fi
+            rm -rf /tmp/quickstart_extract/control* /tmp/quickstart_extract/data* /tmp/quickstart_extract/debian-binary
+          done
+          rm -rf /tmp/quickstart_extract
+
+          # Download REPO KEY 4IceG (IceG Public Key)
+          sudo mkdir -p /etc/apk/repositories.d/ /etc/apk/keys/
+          echo 'https://github.com/4IceG/Modem-extras-apk/raw/refs/heads/main/myapk/packages.adb' | sudo tee -a /etc/apk/repositories.d/customfeeds.list
+          sudo wget https://github.com/4IceG/Modem-extras-apk/raw/refs/heads/main/myapk/IceG-apkpub.pem -O /etc/apk/keys/IceG-apkpub.pem
+
+          # Download Pre-built APK Tema Arwi & Arwi Dashboard
           wget -O files/tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk https://github.com/derisamedia/luci-theme-arwi/releases/download/v4.2.3_beta2/luci-theme-Arwi-4.2.3_beta2-r1.apk
+          wget -O files/tmp/luci-app-arwi-dashboard-1.2-r1.apk https://github.com/derisamedia/luci-app-arwi-dashboard/releases/download/1.2.0-APK/luci-app-arwi-dashboard-1.2-r1.apk
 
           # Download Berkas Firmware MediaTek MT7927 / MT6639
           mkdir -p files/lib/firmware/mediatek/mt7927/
           wget -O files/lib/firmware/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin"
           wget -O files/lib/firmware/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin"
 
+          # Download Berkas Firmware Qualcomm WCN7850 (ath12k)
+          mkdir -p files/lib/firmware/ath12k/WCN7850/hw2.0/
+          wget -O files/lib/firmware/ath12k/WCN7850/hw2.0/amss.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath12k/WCN7850/hw2.0/amss.bin"
+          wget -O files/lib/firmware/ath12k/WCN7850/hw2.0/board-2.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath12k/WCN7850/hw2.0/board-2.bin"
+          wget -O files/lib/firmware/ath12k/WCN7850/hw2.0/m3.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath12k/WCN7850/hw2.0/m3.bin"
+          
           # Install Feeds Tambahan & Dependencies
           ./scripts/feeds install airoha-en7581-mt7996-npu-firmware apk-openssl ath12k-firmware-qcn9274 \
           ath12k-firmware-wcn7850 ath9k-htc-firmware attendedsysupgrade-common base-files blkid block-mount \
@@ -158,7 +194,7 @@ jobs:
           libubox20260213 libubus-lua libubus20251202 libuci20250120 libuclient20201210 libucode20230711 \
           libudebug libudev-zero libusb-1.0-0 libustream-openssl20201210 libuuid1 libxml2-16 libxtables12 \
           lm-sensors logd lsblk lua lua-bit32 lua-rs232 luasocket luci luci-app-3ginfo-lite \
-          luci-app-argon-config luci-app-arwi-dashboard luci-app-attendedsysupgrade luci-app-cpulimit \
+          luci-app-argon-config luci-app-attendedsysupgrade luci-app-cpulimit \
           luci-app-diskman luci-app-firewall luci-app-gpoint luci-app-imei-changer luci-app-lite-watchdog \
           luci-app-mwan3 luci-app-nlbwmon nlbwmon luci-app-package-manager luci-app-tinyfilemanager \
           php8-mod-ctype php8-mod-fileinfo php8-mod-iconv php8-mod-json php8-mod-mbstring php8-mod-zip \
@@ -195,11 +231,17 @@ jobs:
           # 1. Identitas
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
           (echo 'mi1003'; echo 'mi1003') | passwd root
-          # 1a. Auto Install Paket Pre-built APK Tema Arwi saat booting pertama
+          
+          # 1a. Auto Install Paket Pre-built APK Tema Arwi & Arwi Dashboard saat booting pertama
           if [ -f /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk ]; then
             apk add --allow-untrusted /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk
             rm -f /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk
           fi
+          if [ -f /tmp/luci-app-arwi-dashboard-1.2-r1.apk ]; then
+            apk add --allow-untrusted /tmp/luci-app-arwi-dashboard-1.2-r1.apk
+            rm -f /tmp/luci-app-arwi-dashboard-1.2-r1.apk
+          fi
+
           # 2. Universal Bridge LAN
           uci delete network.lan
           uci set network.lan=interface
@@ -213,6 +255,7 @@ jobs:
           for i in \$(ls /sys/class/net | grep -E 'eth|enp|ena'); do
             uci add_list network.device_lan.ports="\$i"
           done
+
           # 2a. USB Tethering
           uci set network.wan_usb=interface
           uci set network.wan_usb.proto='dhcp'
@@ -221,6 +264,7 @@ jobs:
           uci set network.device_usb=device
           uci set network.device_usb.name='usb0'
           uci commit network
+
           # 3. WiFi Setup
           uci set wireless.radio0.disabled='0'
           uci set wireless.radio0.band='5g'
@@ -232,6 +276,7 @@ jobs:
           uci set wireless.default_radio0.key='mi123456'
           uci set wireless.default_radio0.encryption='sae-mixed'
           uci set wireless.default_radio0.network='lan'
+
           # 4. Statistik
           uci set luci_statistics.collectd_interface.enable='1'
           uci set luci_statistics.collectd_interface.Interfaces='br-lan usb0'
@@ -244,9 +289,11 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].show_graph='1'
           uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
+
           # 5. Theme Default: 4lpha (Arwi & Argon tetap terpasang sebagai pilihan alternatif)
           uci set luci.main.mediaurlbase='/luci-static/luci-theme-4lpha'
           uci commit luci
+
           # 5a. Theme Argon & Fix-Collision Setup
           uci set argon.@global[0].login_footer='LemWRT: High Performance Network'
           uci set argon.@global[0].bing_background='1'
@@ -262,17 +309,22 @@ jobs:
           uci set argon.@global[0].custom_color_link='#e67e22'
           uci set argon.@global[0].custom_color_button='#e67e22'
           uci set argon.@global[0].custom_color_button_hover='#d35400'
+
           # Optimasi ModemManager agar tidak mengunci port AT
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
+
           # 6. RE-GROUPING MENU
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
-          # MODEM Group
+
+          # MODEM Group (termasuk paket 4IceG)
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
           [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
           [ -f /usr/share/luci/menu.d/luci-app-sms-manager.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-manager.json
+          [ -f /usr/share/luci/menu.d/luci-app-sms-tool-js.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-sms-tool-js.json
+          [ -f /usr/share/luci/menu.d/luci-app-3ginfo-lite.json ] && sed -i 's/"admin\/status"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-3ginfo-lite.json
           [ -f /usr/share/luci/menu.d/luci-app-modemband.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemband.json
           [ -f /usr/share/luci/menu.d/luci-app-modemdata.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemdata.json
           [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
@@ -471,6 +523,10 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemdata=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-sms-tool-js=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
           echo "CONFIG_PACKAGE_socat=y" >> .config
@@ -482,13 +538,10 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
           # Bandix Plus Traffic Monitoring (Timsaya)
           echo "CONFIG_PACKAGE_openwrt-bandix-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-bandix-plus=y" >> .config
-          # QuickStart / iStore Ecosystem
-          echo "CONFIG_PACKAGE_quickstart=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
+          # Ekosistem iStore (QuickStart sudah di-inject langsung via rootfs)
           echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
           # LuCI 5G Modem & IMEI Changer
           echo "CONFIG_PACKAGE_luci-app-5gmodem=y" >> .config
