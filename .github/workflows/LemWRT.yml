@@ -73,6 +73,10 @@ jobs:
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
 
+          # Clone Core Backend Engine 4IceG (modemband & modemdata)
+          git clone --depth 1 https://github.com/4IceG/modemband.git
+          git clone --depth 1 https://github.com/4IceG/modemdata.git
+
           # Clone 5G Modem Apps dari 4IceG & Repositori Lainnya
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
           git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
@@ -523,6 +527,8 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
+          echo "CONFIG_PACKAGE_modemband=y" >> .config
+          echo "CONFIG_PACKAGE_modemdata=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-modemdata=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
