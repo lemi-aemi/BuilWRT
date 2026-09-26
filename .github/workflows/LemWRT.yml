@@ -73,15 +73,9 @@ jobs:
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
 
-          # Clone Core Backend Engine 4IceG (modemband & modemdata)
-          git clone --depth 1 https://github.com/4IceG/modemband.git
-          git clone --depth 1 https://github.com/4IceG/modemdata.git
-
-          # Clone 5G Modem Apps dari 4IceG & Repositori Lainnya
+          # Clone 5G Modem Apps dari 4IceG (Source Code) & Repositori Lainnya
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
           git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-modemdata.git
-          git clone --depth 1 https://github.com/4IceG/luci-app-modemband.git
           git clone --depth 1 https://github.com/4IceG/luci-app-sms-tool-js.git
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
           git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
@@ -121,6 +115,12 @@ jobs:
             rm -rf /tmp/quickstart_extract/control* /tmp/quickstart_extract/data* /tmp/quickstart_extract/debian-binary
           done
           rm -rf /tmp/quickstart_extract
+
+          # Download Pre-built APK 4IceG (ModemData & ModemBand)
+          wget -O files/tmp/modemdata-20260705-r1.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/modemdata-20260705-r1.apk
+          wget -O files/tmp/luci-app-modemdata-1.0.32-r20260709.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/luci-app-modemdata-1.0.32-r20260709.apk
+          wget -O files/tmp/modemband-20251215-r3.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/modemband-20251215-r3.apk
+          wget -O files/tmp/luci-app-modemband-1.0.31-r20260215.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/luci-app-modemband-1.0.31-r20260215.apk
 
           # Download REPO KEY 4IceG (IceG Public Key)
           sudo mkdir -p /etc/apk/repositories.d/ /etc/apk/keys/
@@ -236,7 +236,23 @@ jobs:
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
           (echo 'mi1003'; echo 'mi1003') | passwd root
           
-          # 1a. Auto Install Paket Pre-built APK Tema Arwi & Arwi Dashboard saat booting pertama
+          # 1a. Auto Install Pre-built APK Tema Arwi, Arwi Dashboard, ModemData & ModemBand saat booting pertama
+          if [ -f /tmp/modemdata-20260705-r1.apk ]; then
+            apk add --allow-untrusted /tmp/modemdata-20260705-r1.apk
+            rm -f /tmp/modemdata-20260705-r1.apk
+          fi
+          if [ -f /tmp/luci-app-modemdata-1.0.32-r20260709.apk ]; then
+            apk add --allow-untrusted /tmp/luci-app-modemdata-1.0.32-r20260709.apk
+            rm -f /tmp/luci-app-modemdata-1.0.32-r20260709.apk
+          fi
+          if [ -f /tmp/modemband-20251215-r3.apk ]; then
+            apk add --allow-untrusted /tmp/modemband-20251215-r3.apk
+            rm -f /tmp/modemband-20251215-r3.apk
+          fi
+          if [ -f /tmp/luci-app-modemband-1.0.31-r20260215.apk ]; then
+            apk add --allow-untrusted /tmp/luci-app-modemband-1.0.31-r20260215.apk
+            rm -f /tmp/luci-app-modemband-1.0.31-r20260215.apk
+          fi
           if [ -f /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk ]; then
             apk add --allow-untrusted /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk
             rm -f /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk
@@ -527,11 +543,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-mini-diskmanager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
-          echo "CONFIG_PACKAGE_modemband=y" >> .config
-          echo "CONFIG_PACKAGE_modemdata=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-modemdata=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-modemband=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-tool-js=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
@@ -579,6 +591,7 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-forcedeth=y" >> .config
           # Hardware Support (Intel/Realtek)
+          echo "CONFIG_PACKAGE_igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igc=y" >> .config
           echo "CONFIG_PACKAGE_kmod-r8169=y" >> .config
