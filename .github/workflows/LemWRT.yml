@@ -98,38 +98,46 @@ jobs:
           cd openwrt
           mkdir -p files/tmp
           mkdir -p files/etc/opkg/keys/
+          mkdir -p /tmp/prebuilt_extract
 
-          # Download & Extract Pre-built IPK QuickStart (animegasan v1.0.2)
-          mkdir -p /tmp/quickstart_extract
-          wget -O /tmp/quickstart_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
-          wget -O /tmp/quickstart_extract/quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/quickstart_0.7.12-60_x86_64.ipk
+          # 1. Download Pre-built IPK QuickStart
+          wget -O /tmp/prebuilt_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
+          wget -O /tmp/prebuilt_extract/quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/quickstart_0.7.12-60_x86_64.ipk
 
-          # Ekstrak data.tar.gz / data.tar.zst langsung ke direktori rootfs openwrt/files/
-          for ipk in /tmp/quickstart_extract/*.ipk; do
-            tar -xzf "$ipk" -C /tmp/quickstart_extract/
-            if [ -f /tmp/quickstart_extract/data.tar.gz ]; then
-              tar -xzf /tmp/quickstart_extract/data.tar.gz -C files/
-            elif [ -f /tmp/quickstart_extract/data.tar.zst ]; then
-              tar --zstd -xf /tmp/quickstart_extract/data.tar.zst -C files/
+          # 2. Download Pre-built APK 4IceG (ModemData & ModemBand)
+          wget -O /tmp/prebuilt_extract/modemdata.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/modemdata-20260705-r1.apk
+          wget -O /tmp/prebuilt_extract/luci-app-modemdata.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/luci-app-modemdata-1.0.32-r20260709.apk
+          wget -O /tmp/prebuilt_extract/modemband.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/modemband-20251215-r3.apk
+          wget -O /tmp/prebuilt_extract/luci-app-modemband.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/luci-app-modemband-1.0.31-r20260215.apk
+
+          # 3. Download Pre-built APK Tema Arwi & Arwi Dashboard
+          wget -O /tmp/prebuilt_extract/luci-theme-arwi.apk https://github.com/derisamedia/luci-theme-arwi/releases/download/v4.2.3_beta2/luci-theme-Arwi-4.2.3_beta2-r1.apk
+          wget -O /tmp/prebuilt_extract/luci-app-arwi-dashboard.apk https://github.com/derisamedia/luci-app-arwi-dashboard/releases/download/1.2.0-APK/luci-app-arwi-dashboard-1.2-r1.apk
+
+          # 4. UNIVERSAL EXTRACTION ENGINE (Ekstrak isi data.tar.* langsung ke rootfs 'files/')
+          for pkg in /tmp/prebuilt_extract/*; do
+            mkdir -p /tmp/single_pkg
+            # Ekstrak layer pertama paket (IPK atau APK)
+            tar -xf "$pkg" -C /tmp/single_pkg/ 2>/dev/null || tar -xzf "$pkg" -C /tmp/single_pkg/ 2>/dev/null || true
+            
+            # Ekstrak layer data internal (data.tar.gz / data.tar.zst / data.tar.xz / data.tar)
+            if [ -f /tmp/single_pkg/data.tar.gz ]; then
+              tar -xzf /tmp/single_pkg/data.tar.gz -C files/
+            elif [ -f /tmp/single_pkg/data.tar.zst ]; then
+              tar --zstd -xf /tmp/single_pkg/data.tar.zst -C files/
+            elif [ -f /tmp/single_pkg/data.tar.xz ]; then
+              tar -xf /tmp/single_pkg/data.tar.xz -C files/
+            elif [ -f /tmp/single_pkg/data.tar ]; then
+              tar -xf /tmp/single_pkg/data.tar -C files/
             fi
-            rm -rf /tmp/quickstart_extract/control* /tmp/quickstart_extract/data* /tmp/quickstart_extract/debian-binary
+            rm -rf /tmp/single_pkg
           done
-          rm -rf /tmp/quickstart_extract
-
-          # Download Pre-built APK 4IceG (ModemData & ModemBand)
-          wget -O files/tmp/modemdata-20260705-r1.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/modemdata-20260705-r1.apk
-          wget -O files/tmp/luci-app-modemdata-1.0.32-r20260709.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/luci-app-modemdata-1.0.32-r20260709.apk
-          wget -O files/tmp/modemband-20251215-r3.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/modemband-20251215-r3.apk
-          wget -O files/tmp/luci-app-modemband-1.0.31-r20260215.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/luci-app-modemband-1.0.31-r20260215.apk
+          rm -rf /tmp/prebuilt_extract
 
           # Download REPO KEY 4IceG (IceG Public Key)
           sudo mkdir -p /etc/apk/repositories.d/ /etc/apk/keys/
           echo 'https://github.com/4IceG/Modem-extras-apk/raw/refs/heads/main/myapk/packages.adb' | sudo tee -a /etc/apk/repositories.d/customfeeds.list
           sudo wget https://github.com/4IceG/Modem-extras-apk/raw/refs/heads/main/myapk/IceG-apkpub.pem -O /etc/apk/keys/IceG-apkpub.pem
-
-          # Download Pre-built APK Tema Arwi & Arwi Dashboard
-          wget -O files/tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk https://github.com/derisamedia/luci-theme-arwi/releases/download/v4.2.3_beta2/luci-theme-Arwi-4.2.3_beta2-r1.apk
-          wget -O files/tmp/luci-app-arwi-dashboard-1.2-r1.apk https://github.com/derisamedia/luci-app-arwi-dashboard/releases/download/1.2.0-APK/luci-app-arwi-dashboard-1.2-r1.apk
 
           # Download Berkas Firmware MediaTek MT7927 / MT6639
           mkdir -p files/lib/firmware/mediatek/mt7927/
@@ -235,32 +243,6 @@ jobs:
           # 1. Identitas
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
           (echo 'mi1003'; echo 'mi1003') | passwd root
-          
-          # 1a. Auto Install Pre-built APK Tema Arwi, Arwi Dashboard, ModemData & ModemBand saat booting pertama
-          if [ -f /tmp/modemdata-20260705-r1.apk ]; then
-            apk add --allow-untrusted /tmp/modemdata-20260705-r1.apk
-            rm -f /tmp/modemdata-20260705-r1.apk
-          fi
-          if [ -f /tmp/luci-app-modemdata-1.0.32-r20260709.apk ]; then
-            apk add --allow-untrusted /tmp/luci-app-modemdata-1.0.32-r20260709.apk
-            rm -f /tmp/luci-app-modemdata-1.0.32-r20260709.apk
-          fi
-          if [ -f /tmp/modemband-20251215-r3.apk ]; then
-            apk add --allow-untrusted /tmp/modemband-20251215-r3.apk
-            rm -f /tmp/modemband-20251215-r3.apk
-          fi
-          if [ -f /tmp/luci-app-modemband-1.0.31-r20260215.apk ]; then
-            apk add --allow-untrusted /tmp/luci-app-modemband-1.0.31-r20260215.apk
-            rm -f /tmp/luci-app-modemband-1.0.31-r20260215.apk
-          fi
-          if [ -f /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk ]; then
-            apk add --allow-untrusted /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk
-            rm -f /tmp/luci-theme-Arwi-4.2.3_beta2-r1.apk
-          fi
-          if [ -f /tmp/luci-app-arwi-dashboard-1.2-r1.apk ]; then
-            apk add --allow-untrusted /tmp/luci-app-arwi-dashboard-1.2-r1.apk
-            rm -f /tmp/luci-app-arwi-dashboard-1.2-r1.apk
-          fi
 
           # 2. Universal Bridge LAN
           uci delete network.lan
@@ -310,7 +292,7 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
 
-          # 5. Theme Default: 4lpha (Arwi & Argon tetap terpasang sebagai pilihan alternatif)
+          # 5. Theme Default: 4lpha / Arwi
           uci set luci.main.mediaurlbase='/luci-static/luci-theme-4lpha'
           uci commit luci
 
