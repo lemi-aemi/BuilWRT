@@ -33,7 +33,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
-          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd
+          gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd p7zip-full binutils
 
       - name: Clone OpenWrt LemWRT Snapshots Kernel 6.18.52-1 & Custom Branding
         run: |
@@ -114,13 +114,16 @@ jobs:
           wget -O /tmp/prebuilt_extract/luci-theme-arwi.apk https://github.com/derisamedia/luci-theme-arwi/releases/download/v4.2.3_beta2/luci-theme-Arwi-4.2.3_beta2-r1.apk
           wget -O /tmp/prebuilt_extract/luci-app-arwi-dashboard.apk https://github.com/derisamedia/luci-app-arwi-dashboard/releases/download/1.2.0-APK/luci-app-arwi-dashboard-1.2-r1.apk
 
-          # 4. UNIVERSAL EXTRACTION ENGINE (Ekstrak isi data.tar.* langsung ke rootfs 'files/')
+          # 4. ENGINE EXTRACTION APK & IPK TINGKAT TINGGI (Menggunakan 7z & ar)
           for pkg in /tmp/prebuilt_extract/*; do
             mkdir -p /tmp/single_pkg
-            # Ekstrak layer pertama paket (IPK atau APK)
-            tar -xf "$pkg" -C /tmp/single_pkg/ 2>/dev/null || tar -xzf "$pkg" -C /tmp/single_pkg/ 2>/dev/null || true
+            cd /tmp/single_pkg
             
-            # Ekstrak layer data internal (data.tar.gz / data.tar.zst / data.tar.xz / data.tar)
+            # Ekstrak layer kontainer utama (IPK/APK)
+            ar x "$pkg" 2>/dev/null || 7z x -y "$pkg" 2>/dev/null || true
+            
+            # Ekstrak data payload internal langsung ke rootfs openwrt/files/
+            cd /home/runner/work/BuilWRT/BuilWRT/openwrt
             if [ -f /tmp/single_pkg/data.tar.gz ]; then
               tar -xzf /tmp/single_pkg/data.tar.gz -C files/
             elif [ -f /tmp/single_pkg/data.tar.zst ]; then
@@ -129,10 +132,16 @@ jobs:
               tar -xf /tmp/single_pkg/data.tar.xz -C files/
             elif [ -f /tmp/single_pkg/data.tar ]; then
               tar -xf /tmp/single_pkg/data.tar -C files/
+            else
+              # Jika APK tidak memakai data.tar, ekstrak struktur folder internalnya
+              7z x -y /tmp/single_pkg/* -Ofiles/ 2>/dev/null || true
             fi
             rm -rf /tmp/single_pkg
           done
           rm -rf /tmp/prebuilt_extract
+
+          # Hapus sisa metadata kontainer
+          rm -rf files/.PKGINFO files/.SIGN* files/.CONTROL* files/control.tar*
 
           # Download REPO KEY 4IceG (IceG Public Key)
           sudo mkdir -p /etc/apk/repositories.d/ /etc/apk/keys/
@@ -292,7 +301,7 @@ jobs:
           uci set nlbwmon.@nlbwmon[0].graph_type='0'
           uci set nlbwmon.@nlbwmon[0].history_size='1440'
 
-          # 5. Theme Default: 4lpha / Arwi
+          # 5. Theme Default
           uci set luci.main.mediaurlbase='/luci-static/luci-theme-4lpha'
           uci commit luci
 
