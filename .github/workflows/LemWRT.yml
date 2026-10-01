@@ -63,11 +63,11 @@ jobs:
           fi
           rm -rf /tmp/lemi-imei-repo
           
-          # Clone Bandix Plus & Custom Ookla Speedtest (keithah Repo)
+          # Clone Bandix Plus, LuCI Mobile API Support & Speedtest Onyx
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
           git clone --depth 1 https://github.com/cogwheel0/luci-mobile.git
-          git clone --depth 1 https://github.com/keithah/openwrt-ookla-speedtest.git
+          git clone --depth 1 https://github.com/MrManiesh/luci-app-speedtest-onyx.git
 
           # Ekstrasi Monorepo Vantage (luci-theme-vantage & luci-app-vantage)
           rm -rf /tmp/vantage-repo
@@ -76,7 +76,7 @@ jobs:
           [ -d "/tmp/vantage-repo/luci-app-vantage" ] && cp -a /tmp/vantage-repo/luci-app-vantage .
           rm -rf /tmp/vantage-repo
 
-          # Clone Ekosistem iStore & NAS Packages
+          # Clone Ekosistem iStore & NAS Packages (Termasuk quickstart, istoreenhance, ddnsto, dockermanager, unishare, & lib-iform)
           git clone --depth 1 https://github.com/linkease/istore.git
           git clone --depth 1 https://github.com/linkease/istore-ui.git
           git clone --depth 1 https://github.com/linkease/nas-packages.git
@@ -117,23 +117,24 @@ jobs:
           # Inject Single-File Prasath Mani TinyFileManager ke /www/tinyfm/index.php
           wget -O files/www/tinyfm/index.php https://raw.githubusercontent.com/prasathmani/tinyfilemanager/master/tinyfilemanager.php
 
-          # 1. Download Pre-built IPK QuickStart
-          mkdir -p /tmp/quickstart_extract
-          wget -O /tmp/quickstart_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
-          wget -O /tmp/quickstart_extract/quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/quickstart_0.7.12-60_x86_64.ipk
+          # 1. Download & Extract Pre-built IPK QuickStart
+          mkdir -p /tmp/ipk_extract
+          wget -O /tmp/ipk_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
+          wget -O /tmp/ipk_extract/quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/quickstart_0.7.12-60_x86_64.ipk
 
-          for ipk in /tmp/quickstart_extract/*.ipk; do
-            tar -xzf "$ipk" -C /tmp/quickstart_extract/
-            if [ -f /tmp/quickstart_extract/data.tar.gz ]; then
-              tar -xzf /tmp/quickstart_extract/data.tar.gz -C files/
-            elif [ -f /tmp/quickstart_extract/data.tar.zst ]; then
-              tar --zstd -xf /tmp/quickstart_extract/data.tar.zst -C files/
+          for ipk in /tmp/ipk_extract/*.ipk; do
+            tar -xzf "$ipk" -C /tmp/ipk_extract/
+            if [ -f /tmp/ipk_extract/data.tar.gz ]; then
+              tar -xzf /tmp/ipk_extract/data.tar.gz -C files/
+            elif [ -f /tmp/ipk_extract/data.tar.zst ]; then
+              tar --zstd -xf /tmp/ipk_extract/data.tar.zst -C files/
             fi
-            rm -rf /tmp/quickstart_extract/control* /tmp/quickstart_extract/data* /tmp/quickstart_extract/debian-binary
+            rm -rf /tmp/ipk_extract/control* /tmp/ipk_extract/data* /tmp/ipk_extract/debian-binary
           done
-          rm -rf /tmp/quickstart_extract
+          rm -rf /tmp/ipk_extract
 
-          # 2. Download APK modemband, modemdata, Arwi Theme, & Arwi Dashboard ke /files/root/
+          # 2. Download APK modemband, modemdata, Speedtest Onyx v1.2-r1, Arwi Theme, & Arwi Dashboard ke /files/root/
+          wget -O files/root/luci-app-speedtest-onyx-1.2-r1.apk https://github.com/MrManiesh/luci-app-speedtest-onyx/releases/download/v1.2-r1/luci-app-speedtest-onyx-1.2-r1.apk
           wget -O files/root/modemdata-20260705-r1.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/modemdata-20260705-r1.apk
           wget -O files/root/luci-app-modemdata-1.0.32-r20260709.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/luci-app-modemdata-1.0.32-r20260709.apk
           wget -O files/root/modemband-20251215-r3.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/modemband-20251215-r3.apk
@@ -253,12 +254,13 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           
-          # SERVICES Group (Termasuk Bandix Plus & Ookla Speedtest)
+          # SERVICES Group (Termasuk Bandix Plus, Speedtest Onyx, ddnsto)
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/status"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-bandix.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix.json
-          [ -f /usr/share/luci/menu.d/luci-app-ookla-speedtest.json ] && sed -i 's/"admin\/status"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ookla-speedtest.json
-          [ -f /usr/share/luci/menu.d/luci-app-ookla-speedtest.json ] && sed -i 's/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ookla-speedtest.json
+          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/status"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
+          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
+          [ -f /usr/share/luci/menu.d/luci-app-ddnsto.json ] && sed -i 's/"admin\/services"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ddnsto.json
           
           # DNS, VPN, WIFI, NAS
           [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
@@ -268,6 +270,7 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-base.json ] && sed -i 's/"admin\/network\/wireless"/"admin\/wifi"/g' /usr/share/luci/menu.d/luci-base.json
           [ -f /usr/share/luci/menu.d/apcontroller.json ] && sed -i 's/"admin\/network"/"admin\/wifi"/g' /usr/share/luci/menu.d/apcontroller.json
           [ -f /usr/share/luci/menu.d/luci-app-samba4.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-samba4.json
+          [ -f /usr/share/luci/menu.d/luci-app-unishare.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-unishare.json
           [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
           [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
           [ -f /usr/share/luci/menu.d/luci-app-tinyfm.json ] && sed -i 's/"admin\/system"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfm.json
@@ -294,6 +297,25 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
           
+          # Dependensi Speedtest Onyx & System Tools Offline
+          echo "CONFIG_PACKAGE_jq=y" >> .config
+          echo "CONFIG_PACKAGE_bzip2=y" >> .config
+          echo "CONFIG_PACKAGE_libbz2=y" >> .config
+          echo "CONFIG_PACKAGE_tar=y" >> .config
+          echo "CONFIG_PACKAGE_xz=y" >> .config
+          echo "CONFIG_PACKAGE_xz-utils=y" >> .config
+          echo "CONFIG_PACKAGE_libacl=y" >> .config
+          echo "CONFIG_PACKAGE_libzstd=y" >> .config
+          echo "CONFIG_PACKAGE_liblzma=y" >> .config
+          
+          # Paket Pilihan Ekosistem iStoreOS (Linkease)
+          echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-istoreenhance=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-ddnsto=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-dockermanager=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-unishare=y" >> .config
+          echo "CONFIG_PACKAGE_luci-lib-iform=y" >> .config
+          
           # LuCI Mobile API Support Backend & Backend Vantage Theme
           echo "CONFIG_PACKAGE_rpcd=y" >> .config
           echo "CONFIG_PACKAGE_rpcd-mod-luci=y" >> .config
@@ -303,8 +325,8 @@ jobs:
           echo "CONFIG_PACKAGE_libiwinfo=y" >> .config
           echo "CONFIG_PACKAGE_libiwinfo-lua=y" >> .config
           
-          # Ookla Speedtest (keithah Repo)
-          echo "CONFIG_PACKAGE_luci-app-ookla-speedtest=y" >> .config
+          # Speedtest Onyx App
+          echo "CONFIG_PACKAGE_luci-app-speedtest-onyx=y" >> .config
           
           # Themes & Dashboards (Vantage Theme & App Modul Ekosistem)
           echo "CONFIG_PACKAGE_luci-theme-vantage=y" >> .config
@@ -509,7 +531,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-poweroff=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
           echo "CONFIG_PACKAGE_apcontroller=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
           # Driver LAN PCIe High-End (Intel Server Grade)
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
           echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
