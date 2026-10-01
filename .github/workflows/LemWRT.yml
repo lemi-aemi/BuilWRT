@@ -73,9 +73,12 @@ jobs:
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
 
-          # Clone ARWI Theme & ARWI Dashboard
+          # Clone Themes (Vantage, ARWI, Argon)
+          git clone --depth 1 https://github.com/anothaDev/luci-theme-vantage.git
           git clone --depth 1 https://github.com/derisamedia/luci-theme-arwi.git
           git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
+          git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
+          git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
 
           # Clone 5G Modem Apps dari 4IceG & Repositori Lainnya
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
@@ -88,8 +91,6 @@ jobs:
 
           git clone --depth 1 https://github.com/fildunsky/luci-app-5gmodem.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
-          git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
-          git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
           git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
           git clone --depth 1 https://github.com/obsy/apcontroller.git
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
@@ -206,8 +207,10 @@ jobs:
           # Clear LuCI Index Cache
           rm -f /tmp/luci-indexcache /tmp/luci-modulecache/*
 
-          # 5. Theme Default Setup
-          if [ -d /www/luci-static/arwi ] || [ -d /www/luci-static/luci-theme-arwi ]; then
+          # 5. Theme Default Setup (Vantage First, Fallback to Arwi/Argon)
+          if [ -d /www/luci-static/vantage ] || [ -d /www/luci-static/luci-theme-vantage ]; then
+            uci set luci.main.mediaurlbase='/luci-static/vantage'
+          elif [ -d /www/luci-static/arwi ] || [ -d /www/luci-static/luci-theme-arwi ]; then
             uci set luci.main.mediaurlbase='/luci-static/arwi'
           else
             uci set luci.main.mediaurlbase='/luci-static/argon'
@@ -273,9 +276,12 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
           
-          # ARWI Theme & Dashboard
+          # Themes
+          echo "CONFIG_PACKAGE_luci-theme-vantage=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-arwi=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
+          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
 
           # Prasath Mani TinyFileManager Package
           echo "CONFIG_PACKAGE_luci-app-tinyfm=y" >> .config
@@ -449,9 +455,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-sms-tool-js=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
-          echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
           echo "CONFIG_PACKAGE_socat=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
           # Driver & Apps Lainnya
           echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
