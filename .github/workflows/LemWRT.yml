@@ -69,14 +69,20 @@ jobs:
           git clone --depth 1 https://github.com/cogwheel0/luci-mobile.git
           git clone --depth 1 https://github.com/keithah/openwrt-ookla-speedtest.git
 
+          # Ekstrasi Monorepo Vantage (luci-theme-vantage & luci-app-vantage)
+          rm -rf /tmp/vantage-repo
+          git clone --depth 1 https://github.com/anothaDev/luci-theme-vantage.git /tmp/vantage-repo
+          [ -d "/tmp/vantage-repo/luci-theme-vantage" ] && cp -a /tmp/vantage-repo/luci-theme-vantage .
+          [ -d "/tmp/vantage-repo/luci-app-vantage" ] && cp -a /tmp/vantage-repo/luci-app-vantage .
+          rm -rf /tmp/vantage-repo
+
           # Clone Ekosistem iStore & NAS Packages
           git clone --depth 1 https://github.com/linkease/istore.git
           git clone --depth 1 https://github.com/linkease/istore-ui.git
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
 
-          # Clone Themes (Vantage as Main, Proton 2025, ARWI, Argon)
-          git clone --depth 1 https://github.com/anothaDev/luci-theme-vantage.git
+          # Clone Themes Lainnya (Proton 2025, ARWI, Argon)
           git clone --depth 1 https://github.com/ChesterGoodiny/luci-theme-proton2025.git
           git clone --depth 1 https://github.com/derisamedia/luci-theme-arwi.git
           git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
@@ -300,8 +306,9 @@ jobs:
           # Ookla Speedtest (keithah Repo)
           echo "CONFIG_PACKAGE_luci-app-ookla-speedtest=y" >> .config
           
-          # Themes & Dashboards
+          # Themes & Dashboards (Vantage Theme & App Modul Ekosistem)
           echo "CONFIG_PACKAGE_luci-theme-vantage=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-vantage=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-proton2025=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-proton2025-dashboard=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-arwi=y" >> .config
