@@ -35,16 +35,26 @@ jobs:
           sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
           gettext git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev libncurses-dev zstd p7zip-full binutils
 
-      - name: Clone OpenWrt LemWRT Snapshots Kernel 6.18.52-1-d0b7e90eb09c21d99e46e3a687a2a66d & Custom Branding
+      - name: Clone OpenWrt & Auto-Detect Latest Kernel Snapshot
         run: |
-          git clone https://github.com/openwrt/openwrt.git openwrt
+          git clone --depth 1 https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
+
           # CUSTOM BRANDING & LOGIN TEXT
           sed -i 's/OpenWrt/LemWRT/g' include/target.mk
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
-          # LOCK TARGET KERNEL SNAPSHOT VERSION
-          echo "LemWRT Snapshots (Kernel 6.18.52-1-d0b7e90eb09c21d99e46e3a687a2a66d)" > package/base-files/files/etc/openwrt_version
+
+          # AUTO-DETECT KERNEL TERBARU DARI SERVER OPENWRT (SESUAI TANGGAL & WAKTU BUILD)
+          LATEST_KMOD_VER=$(curl -s https://downloads.openwrt.org/snapshots/targets/x86/64/kmods/ | grep -oE 'kernel_6\.[0-9]+\.[0-9]+-[0-9]+-[a-f0-9]{32}' | head -n 1 | sed 's/kernel_//')
+          
+          if [ -n "$LATEST_KMOD_VER" ]; then
+            echo "LemWRT Snapshots (Kernel $LATEST_KMOD_VER)" > package/base-files/files/etc/openwrt_version
+            echo "Detected Latest Kernel Version: $LATEST_KMOD_VER"
+          else
+            echo "LemWRT Snapshots (Kernel 6.18.54-1-d0b7e90eb09c21d99e46e3a687a2a66d)" > package/base-files/files/etc/openwrt_version
+          fi
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
