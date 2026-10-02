@@ -115,21 +115,14 @@ jobs:
           mkdir -p files/usr/bin
           mkdir -p files/etc/opkg/keys/
 
-          # 1. Download & Install Official Ookla Speedtest CLI Binary untuk Engine NetSpeedTest
+          # 1. Download & Install Official Ookla Speedtest CLI Binary Langsung ke Files RootFS
           wget -O /tmp/ookla-speedtest.tgz https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz
-          tar -xzf /tmp/ookla-speedtest.tgz -C /tmp/
-          mv /tmp/speedtest files/usr/bin/
+          tar -xzf /tmp/ookla-speedtest.tgz -C files/usr/bin/ speedtest
           chmod +x files/usr/bin/speedtest
           rm -f /tmp/ookla-speedtest.tgz
 
-          # 2. Download & Extract Pre-built IPK QuickStart (Kiddin9) & iPerf3 Server (Kiddin9)
+          # 2. Download & Extract Pre-built IPK iPerf3 Server dari Kiddin9
           mkdir -p /tmp/ipk_extract
-          wget -O /tmp/ipk_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
-          
-          # Inject quickstart_0.13.0-r5_x86_64.ipk terbaru dari Kiddin9
-          wget -O /tmp/ipk_extract/quickstart.ipk "https://dl.openwrt.ai/packages-25.12/x86_64/kiddin9/quickstart_0.13.0-r5_x86_64.ipk"
-          
-          # Inject luci-app-iperf3-server terbaru dari Kiddin9
           wget -O /tmp/ipk_extract/luci-app-iperf3-server.ipk "https://dl.openwrt.ai/packages-25.12/x86_64/kiddin9/luci-app-iperf3-server_3.0.0-r1_all.ipk"
 
           for ipk in /tmp/ipk_extract/*.ipk; do
@@ -326,7 +319,6 @@ jobs:
           echo "CONFIG_PACKAGE_liblzma=y" >> .config
           
           # Paket Pilihan Ekosistem iStoreOS (Linkease)
-          echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-istoreenhance=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-ddnsto=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-dockermanager=y" >> .config
