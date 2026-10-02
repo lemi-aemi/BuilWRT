@@ -63,11 +63,12 @@ jobs:
           fi
           rm -rf /tmp/lemi-imei-repo
           
-          # Clone Bandix Plus, LuCI Mobile API Support & Speedtest Onyx
+          # Clone Bandix Plus, LuCI Mobile API Support, Speedtest Onyx & iperf3 App
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
           git clone --depth 1 https://github.com/cogwheel0/luci-mobile.git
           git clone --depth 1 https://github.com/MrManiesh/luci-app-speedtest-onyx.git
+          git clone --depth 1 https://github.com/sirpdboy/luci-app-netspeed.git || git clone --depth 1 https://github.com/openwrt-develop/luci-app-iperf3.git
 
           # Ekstrasi Monorepo Vantage (luci-theme-vantage & luci-app-vantage)
           rm -rf /tmp/vantage-repo
@@ -247,7 +248,7 @@ jobs:
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
 
-          # 6. RE-GROUPING MENU & PENCEGAHAN BENTROK APLIKASI
+          # 6. RE-GROUPING MENU
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
 
@@ -264,19 +265,20 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           
-          # SERVICES Group (Termasuk Speedtest Onyx & Ookla Speedtest Web)
+          # SPEEDTEST Grouping Khusus (Menyatukan Onyx, Ookla Web, & iperf3 Server)
+          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/status"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
+          if [ -f /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json ]; then
+            sed -i 's/"title": "Speedtest"/"title": "GL.iNet Ookla Speedtest"/g' /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json
+            sed -i 's/"admin\/services\/speedtest"/"admin\/speedtest\/ookla"/g; s/"admin\/services"/"admin\/speedtest"/g' /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json
+          fi
+          [ -f /usr/share/luci/menu.d/luci-app-iperf3.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3.json
+          [ -f /usr/share/luci/menu.d/luci-app-netspeed.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-netspeed.json
+
+          # SERVICES Group
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/status"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-bandix.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix.json
-          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/status"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
-          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
           [ -f /usr/share/luci/menu.d/luci-app-ddnsto.json ] && sed -i 's/"admin\/services"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ddnsto.json
-          
-          # PENCEGAHAN BENTROK: Penyesuaian Nama Menu Ookla Speedtest Web GL-App
-          if [ -f /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json ]; then
-            sed -i 's/"title": "Speedtest"/"title": "Ookla Speedtest Web"/g' /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json
-            sed -i 's/"admin\/services\/speedtest"/"admin\/services\/ookla-web"/g' /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json
-          fi
           
           # DNS, VPN, WIFI, NAS
           [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
@@ -325,6 +327,13 @@ jobs:
           echo "CONFIG_PACKAGE_libzstd=y" >> .config
           echo "CONFIG_PACKAGE_liblzma=y" >> .config
           
+          # Paket Speedtest, Ookla, & iperf3
+          echo "CONFIG_PACKAGE_iperf3=y" >> .config
+          echo "CONFIG_PACKAGE_iperf3-ssl=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-iperf3=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-netspeed=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-speedtest-onyx=y" >> .config
+          
           # Paket Pilihan Ekosistem iStoreOS (Linkease)
           echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-istoreenhance=y" >> .config
@@ -341,9 +350,6 @@ jobs:
           echo "CONFIG_PACKAGE_iwinfo=y" >> .config
           echo "CONFIG_PACKAGE_libiwinfo=y" >> .config
           echo "CONFIG_PACKAGE_libiwinfo-lua=y" >> .config
-          
-          # Speedtest Onyx App
-          echo "CONFIG_PACKAGE_luci-app-speedtest-onyx=y" >> .config
           
           # Themes & Dashboards (Vantage Theme & App Modul Ekosistem)
           echo "CONFIG_PACKAGE_luci-theme-vantage=y" >> .config
