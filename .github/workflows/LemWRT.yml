@@ -63,12 +63,15 @@ jobs:
           fi
           rm -rf /tmp/lemi-imei-repo
           
-          # Clone Bandix Plus, LuCI Mobile API Support, Speedtest Onyx & iperf3 App
+          # Clone All-in-One NetSpeedTest & TinyFileManager dari Muink
+          git clone --depth 1 https://github.com/muink/luci-app-netspeedtest.git
+          git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git
+          git clone --depth 1 https://github.com/MrManiesh/luci-app-speedtest-onyx.git
+
+          # Clone Bandix Plus & LuCI Mobile API Support
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
           git clone --depth 1 https://github.com/cogwheel0/luci-mobile.git
-          git clone --depth 1 https://github.com/MrManiesh/luci-app-speedtest-onyx.git
-          git clone --depth 1 https://github.com/sirpdboy/luci-app-netspeed.git || git clone --depth 1 https://github.com/openwrt-develop/luci-app-iperf3.git
 
           # Ekstrasi Monorepo Vantage (luci-theme-vantage & luci-app-vantage)
           rm -rf /tmp/vantage-repo
@@ -104,34 +107,28 @@ jobs:
           git clone --depth 1 https://github.com/immortalwrt-collections/openwrt-filebrowser.git
           git clone --depth 1 https://github.com/sirpdboy/luci-app-poweroffdevice.git
 
-          # Integrasi Prasath Mani TinyFileManager LuCI Wrapper
-          git clone --depth 1 https://github.com/bobbyunknown/luci-app-tinyfm.git
-
-      - name: Inject Hybrid Pre-built Packages, Speedtest CLI, Prasath Mani Core & Assets
+      - name: Inject Hybrid Pre-built Packages, Speedtest CLI, & Assets
         run: |
           cd openwrt
           mkdir -p files/tmp
           mkdir -p files/root
           mkdir -p files/usr/bin
-          mkdir -p files/www/tinyfm
           mkdir -p files/etc/opkg/keys/
 
-          # 1. Download & Install Official Ookla Speedtest CLI Binary
+          # 1. Download & Install Official Ookla Speedtest CLI Binary untuk Engine NetSpeedTest
           wget -O /tmp/ookla-speedtest.tgz https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz
           tar -xzf /tmp/ookla-speedtest.tgz -C /tmp/
           mv /tmp/speedtest files/usr/bin/
           chmod +x files/usr/bin/speedtest
           rm -f /tmp/ookla-speedtest.tgz
 
-          # 2. Inject Single-File Prasath Mani TinyFileManager
-          wget -O files/www/tinyfm/index.php https://raw.githubusercontent.com/prasathmani/tinyfilemanager/master/tinyfilemanager.php
-
-          # 3. Download & Extract Pre-built IPK QuickStart, Ookla Speedtest Web, & Webd
+          # 2. Download & Extract Pre-built IPK QuickStart & iPerf3 Server dari Kiddin9
           mkdir -p /tmp/ipk_extract
           wget -O /tmp/ipk_extract/luci-app-quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/luci-app-quickstart_1.0.2-20230817_all.ipk
           wget -O /tmp/ipk_extract/quickstart.ipk https://github.com/animegasan/luci-app-quickstart/releases/download/1.0.2/quickstart_0.7.12-60_x86_64.ipk
-          wget -O /tmp/ipk_extract/gl-app-ookla-speedtest-web.ipk https://github.com/keithah/openwrt-ookla-speedtest/releases/download/v1.3.0/gl-app-ookla-speedtest-web_1.3.0-1_all.ipk
-          wget -O /tmp/ipk_extract/ookla-speedtest-webd.ipk https://github.com/keithah/openwrt-ookla-speedtest/releases/download/v1.3.0/ookla-speedtest-webd_1.3.0-1_all.ipk
+          
+          # Inject luci-app-iperf3-server terbaru dari Kiddin9
+          wget -O /tmp/ipk_extract/luci-app-iperf3-server.ipk "https://dl.openwrt.ai/packages-25.12/x86_64/kiddin9/luci-app-iperf3-server_3.0.0-r1_all.ipk"
 
           for ipk in /tmp/ipk_extract/*.ipk; do
             tar -xzf "$ipk" -C /tmp/ipk_extract/
@@ -144,7 +141,7 @@ jobs:
           done
           rm -rf /tmp/ipk_extract
 
-          # 4. Download APK modemband, modemdata, Speedtest Onyx v1.5-r1, Arwi Theme, & Arwi Dashboard ke /files/root/
+          # 3. Download APK modemband, modemdata, Speedtest Onyx v1.5-r1, Arwi Theme, & Arwi Dashboard ke /files/root/
           wget -O files/root/luci-app-speedtest-onyx-1.5-r1.apk https://github.com/MrManiesh/luci-app-speedtest-onyx/releases/download/v1.5-r1/luci-app-speedtest-onyx-1.5-r1.apk
           wget -O files/root/modemdata-20260705-r1.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/modemdata-20260705-r1.apk
           wget -O files/root/luci-app-modemdata-1.0.32-r20260709.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/luci-app-modemdata-1.0.32-r20260709.apk
@@ -265,14 +262,10 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           
-          # SPEEDTEST Grouping Khusus (Menyatukan Onyx, Ookla Web, & iperf3 Server)
+          # SPEEDTEST Grouping Khusus (NetSpeedTest, Speedtest Onyx & iPerf3 Server dari Kiddin9)
+          [ -f /usr/share/luci/menu.d/luci-app-netspeedtest.json ] && sed -i 's/"admin\/network"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-netspeedtest.json
           [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/status"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
-          if [ -f /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json ]; then
-            sed -i 's/"title": "Speedtest"/"title": "GL.iNet Ookla Speedtest"/g' /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json
-            sed -i 's/"admin\/services\/speedtest"/"admin\/speedtest\/ookla"/g; s/"admin\/services"/"admin\/speedtest"/g' /usr/share/luci/menu.d/gl-app-ookla-speedtest-web.json
-          fi
-          [ -f /usr/share/luci/menu.d/luci-app-iperf3.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3.json
-          [ -f /usr/share/luci/menu.d/luci-app-netspeed.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-netspeed.json
+          [ -f /usr/share/luci/menu.d/luci-app-iperf3-server.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3-server.json
 
           # SERVICES Group
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
@@ -291,7 +284,7 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-unishare.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-unishare.json
           [ -f /usr/share/luci/menu.d/luci-app-filebrowser.json ] && sed -i 's/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-filebrowser.json
           [ -f /usr/share/luci/menu.d/luci-app-mini-diskmanager.json ] && sed -i 's/"admin\/nas"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-mini-diskmanager.json
-          [ -f /usr/share/luci/menu.d/luci-app-tinyfm.json ] && sed -i 's/"admin\/system"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfm.json
+          [ -f /usr/share/luci/menu.d/luci-app-tinyfilemanager.json ] && sed -i 's/"admin\/system"/"admin\/nas"/g; s/"admin\/services"/"admin\/nas"/g' /usr/share/luci/menu.d/luci-app-tinyfilemanager.json
           
           uci commit
           exit 0
@@ -316,7 +309,10 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
           
-          # Dependensi Speedtest Onyx & System Tools Offline
+          # Dependensi Speedtest Onyx & NetSpeedTest
+          echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
+          echo "CONFIG_PACKAGE_iperf3=y" >> .config
+          echo "CONFIG_PACKAGE_iperf3-ssl=y" >> .config
           echo "CONFIG_PACKAGE_jq=y" >> .config
           echo "CONFIG_PACKAGE_bzip2=y" >> .config
           echo "CONFIG_PACKAGE_libbz2=y" >> .config
@@ -326,13 +322,6 @@ jobs:
           echo "CONFIG_PACKAGE_libacl=y" >> .config
           echo "CONFIG_PACKAGE_libzstd=y" >> .config
           echo "CONFIG_PACKAGE_liblzma=y" >> .config
-          
-          # Paket Speedtest, Ookla, & iperf3
-          echo "CONFIG_PACKAGE_iperf3=y" >> .config
-          echo "CONFIG_PACKAGE_iperf3-ssl=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-iperf3=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-netspeed=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-speedtest-onyx=y" >> .config
           
           # Paket Pilihan Ekosistem iStoreOS (Linkease)
           echo "CONFIG_PACKAGE_luci-app-quickstart=y" >> .config
@@ -361,10 +350,10 @@ jobs:
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
 
-          # Prasath Mani TinyFileManager Package
-          echo "CONFIG_PACKAGE_luci-app-tinyfm=y" >> .config
+          # Paket TinyFileManager Muink
+          echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
           
-          # Dependensi PHP8 Lengkap untuk TinyFileManager
+          # Dependensi PHP8 Lengkap untuk TinyFileManager Core Backend
           echo "CONFIG_PACKAGE_php8=y" >> .config
           echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
           echo "CONFIG_PACKAGE_php8-mod-ctype=y" >> .config
