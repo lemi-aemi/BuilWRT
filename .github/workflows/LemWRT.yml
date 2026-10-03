@@ -45,7 +45,7 @@ jobs:
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
 
-          # AUTO-DETECT KERNEL TERBARU DARI SERVER OPENWRT (SESUAI TANGGAL & WAKTU BUILD)
+          # AUTO-DETECT KERNEL TERBARU DARI SERVER OPENWRT
           LATEST_KMOD_VER=$(curl -s https://downloads.openwrt.org/snapshots/targets/x86/64/kmods/ | grep -oE 'kernel_6\.[0-9]+\.[0-9]+-[0-9]+-[a-f0-9]{32}' | head -n 1 | sed 's/kernel_//')
           
           if [ -n "$LATEST_KMOD_VER" ]; then
@@ -73,7 +73,7 @@ jobs:
           fi
           rm -rf /tmp/lemi-imei-repo
           
-          # Clone All-in-One NetSpeedTest & TinyFileManager dari Muink
+          # Clone All-in-One NetSpeedTest & TinyFileManager dari Muink + Speedtest Onyx dari MrManiesh
           git clone --depth 1 https://github.com/muink/luci-app-netspeedtest.git
           git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git
           git clone --depth 1 https://github.com/MrManiesh/luci-app-speedtest-onyx.git
@@ -146,8 +146,7 @@ jobs:
           done
           rm -rf /tmp/ipk_extract
 
-          # 3. Download APK modemband, modemdata, Speedtest Onyx v1.5-r1, Arwi Theme, & Arwi Dashboard ke /files/root/
-          wget -O files/root/luci-app-speedtest-onyx-1.5-r1.apk https://github.com/MrManiesh/luci-app-speedtest-onyx/releases/download/v1.5-r1/luci-app-speedtest-onyx-1.5-r1.apk
+          # 3. Download APK modemband, modemdata, Arwi Theme, & Arwi Dashboard ke /files/root/
           wget -O files/root/modemdata-20260705-r1.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/modemdata-20260705-r1.apk
           wget -O files/root/luci-app-modemdata-1.0.32-r20260709.apk https://github.com/4IceG/luci-app-modemdata/releases/download/1.0.32-r20260709/luci-app-modemdata-1.0.32-r20260709.apk
           wget -O files/root/modemband-20251215-r3.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/modemband-20251215-r3.apk
@@ -225,7 +224,13 @@ jobs:
             rm -f /root/*.apk
           fi
 
-          # 5. PENDAFTARAN TEMA LENGKAP KE DROPDOWN LUCI DESIGN MENU
+          # 5. AUTO-ENABLE & START BANDIX PLUS SERVICE
+          uci set bandix_plus.main.enabled='1' 2>/dev/null || uci set bandix.main.enabled='1' 2>/dev/null || true
+          uci commit bandix_plus 2>/dev/null || uci commit bandix 2>/dev/null || true
+          /etc/init.d/bandix-plus enable 2>/dev/null || /etc/init.d/bandix enable 2>/dev/null || true
+          /etc/init.d/bandix-plus start 2>/dev/null || /etc/init.d/bandix start 2>/dev/null || true
+
+          # 6. PENDAFTARAN TEMA LENGKAP KE DROPDOWN LUCI DESIGN MENU
           uci set luci.themes.Vantage='/luci-static/vantage'
           uci set luci.themes.Proton='/luci-static/proton2025'
           uci set luci.themes.Arwi='/luci-static/arwi'
@@ -250,7 +255,7 @@ jobs:
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
 
-          # 6. RE-GROUPING MENU
+          # 7. RE-GROUPING MENU
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
 
@@ -273,9 +278,8 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-iperf3-server.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3-server.json
 
           # SERVICES Group
-          [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
-          [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/status"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
-          [ -f /usr/share/luci/menu.d/luci-app-bandix.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix.json
+          [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g; s/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
+          [ -f /usr/share/luci/menu.d/luci-app-bandix.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g; s/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix.json
           [ -f /usr/share/luci/menu.d/luci-app-ddnsto.json ] && sed -i 's/"admin\/services"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ddnsto.json
           
           # DNS, VPN, WIFI, NAS
@@ -314,8 +318,20 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
           
+          # USB Host Controllers & USB Utilities Support (lsusb)
+          echo "CONFIG_PACKAGE_kmod-usb-core=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb2=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb3=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-storage=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-usb-storage-uas=y" >> .config
+          echo "CONFIG_PACKAGE_usbutils=y" >> .config
+          echo "CONFIG_PACKAGE_usbids=y" >> .config
+          echo "CONFIG_PACKAGE_libusb-1.0-0=y" >> .config
+          echo "CONFIG_PACKAGE_usbreset=y" >> .config
+          
           # Dependensi Speedtest Onyx & NetSpeedTest
           echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-speedtest-onyx=y" >> .config
           echo "CONFIG_PACKAGE_iperf3=y" >> .config
           echo "CONFIG_PACKAGE_iperf3-ssl=y" >> .config
           echo "CONFIG_PACKAGE_jq=y" >> .config
@@ -489,9 +505,6 @@ jobs:
           echo "CONFIG_PACKAGE_pciutils=y" >> .config
           echo "CONFIG_PACKAGE_pciids=y" >> .config
           echo "CONFIG_PACKAGE_libpci=y" >> .config
-          echo "CONFIG_PACKAGE_usbutils=y" >> .config
-          echo "CONFIG_PACKAGE_usbids=y" >> .config
-          echo "CONFIG_PACKAGE_libusb-1.0-0=y" >> .config
           echo "CONFIG_PACKAGE_sysfsutils=y" >> .config
           # User Management Utils (Shadow)
           echo "CONFIG_PACKAGE_shadow-utils=y" >> .config
@@ -534,6 +547,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
           # Bandix Plus Traffic Monitoring
           echo "CONFIG_PACKAGE_openwrt-bandix-plus=y" >> .config
+          echo "CONFIG_PACKAGE_bandix-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-bandix-plus=y" >> .config
           # Ekosistem iStore
           echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
