@@ -61,17 +61,6 @@ jobs:
       - name: Add Custom Apps & Themes
         run: |
           cd openwrt/package
-          # Integrasi Repository Eksternal IMEI Changer dari Lemi-Aemi
-          rm -rf /tmp/lemi-imei-repo
-          git clone --depth 1 https://github.com/lemi-aemi/build-apk.yml.git /tmp/lemi-imei-repo
-          if [ -d "/tmp/lemi-imei-repo/luci-app-imei-changer" ]; then
-            cp -a /tmp/lemi-imei-repo/luci-app-imei-changer .
-          elif [ -d "/tmp/lemi-imei-repo/luci-app-imei" ]; then
-            cp -a /tmp/lemi-imei-repo/luci-app-imei .
-          else
-            cp -a /tmp/lemi-imei-repo/package/* . 2>/dev/null || true
-          fi
-          rm -rf /tmp/lemi-imei-repo
 
           # ----------------------------------------------------
           # INJEKSI CUSTOM LUCI APP FOR QMANAGER (3 MODEMS SUPPORT)
@@ -82,7 +71,7 @@ jobs:
           mkdir -p luci-app-qmanager/root/etc/config/
 
           # 1. Config Default (3 Modems IP)
-          cat << 'EOF' > luci-app-qmanager/root/etc/config/qmanager
+          cat << 'QMCONFIG' > luci-app-qmanager/root/etc/config/qmanager
 config qmanager 'main'
 	option modem1_name 'Modem 1 (Primary)'
 	option modem1_ip '192.168.224.1'
@@ -93,10 +82,10 @@ config qmanager 'main'
 	option modem3_name 'Modem 3 (Backup)'
 	option modem3_ip '192.168.9.1'
 	option modem3_port '80'
-EOF
+QMCONFIG
 
           # 2. Controller LuCI
-          cat << 'EOF' > luci-app-qmanager/luasrc/controller/qmanager.lua
+          cat << 'QMCTRL' > luci-app-qmanager/luasrc/controller/qmanager.lua
 module("luci.controller.qmanager", package.seeall)
 
 function index()
@@ -107,10 +96,10 @@ function index()
     entry({"admin", "modem", "qmanager"}, template("qmanager/iframe"), _("QManager Multi-Modem"), 1).dependent = true
     entry({"admin", "modem", "qmanager_settings"}, cbi("qmanager/settings"), _("QManager Config"), 2).dependent = true
 end
-EOF
+QMCTRL
 
           # 3. Model CBI (Halaman Setting 3 IP Modem)
-          cat << 'EOF' > luci-app-qmanager/luasrc/model/cbi/qmanager/settings.lua
+          cat << 'QMSET' > luci-app-qmanager/luasrc/model/cbi/qmanager/settings.lua
 m = Map("qmanager", translate("QManager Multi-Modem Settings"), translate("Atur Label Nama dan IP Target untuk 3 Modem Quectel/QManager"))
 
 s = m:section(NamedSection, "main", "qmanager", translate("Konfigurasi Modem"))
@@ -131,10 +120,10 @@ s:option(Value, "modem3_ip", translate("Modem 3 IP Address")).datatype = "ip4add
 s:option(Value, "modem3_port", translate("Modem 3 Port")).datatype = "port"
 
 return m
-EOF
+QMSET
 
           # 4. View Template (Interactive Multi-Tab iFrame)
-          cat << 'EOF' > luci-app-qmanager/luasrc/view/qmanager/iframe.htm
+          cat << 'QMVIEW' > luci-app-qmanager/luasrc/view/qmanager/iframe.htm
 <%+header%>
 <%
 local uci = require "luci.model.uci".cursor()
@@ -188,10 +177,10 @@ function switchModem(url, btnId) {
 </script>
 
 <%+footer%>
-EOF
+QMVIEW
 
           # 5. Makefile Package
-          cat << 'EOF' > luci-app-qmanager/Makefile
+          cat << 'QMMAKE' > luci-app-qmanager/Makefile
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI Support for Multi-Modem QManager Web Dashboard
@@ -202,7 +191,19 @@ PKG_NAME:=luci-app-qmanager
 PKG_RELEASE:=1
 
 include $(TOPDIR)/feeds/luci/luci.mk
-EOF
+QMMAKE
+
+          # Integrasi Repository Eksternal IMEI Changer dari Lemi-Aemi
+          rm -rf /tmp/lemi-imei-repo
+          git clone --depth 1 https://github.com/lemi-aemi/build-apk.yml.git /tmp/lemi-imei-repo
+          if [ -d "/tmp/lemi-imei-repo/luci-app-imei-changer" ]; then
+            cp -a /tmp/lemi-imei-repo/luci-app-imei-changer .
+          elif [ -d "/tmp/lemi-imei-repo/luci-app-imei" ]; then
+            cp -a /tmp/lemi-imei-repo/luci-app-imei .
+          else
+            cp -a /tmp/lemi-imei-repo/package/* . 2>/dev/null || true
+          fi
+          rm -rf /tmp/lemi-imei-repo
 
           # Clone All-in-One NetSpeedTest & TinyFileManager dari Muink + Speedtest Onyx dari MrManiesh
           git clone --depth 1 https://github.com/muink/luci-app-netspeedtest.git
@@ -307,7 +308,7 @@ EOF
         run: |
           cd openwrt
           mkdir -p files/etc/uci-defaults
-          cat <<EOF > files/etc/uci-defaults/99-lemwrt-final
+          cat << 'LEMSETUP' > files/etc/uci-defaults/99-lemwrt-final
           #!/bin/sh
           # 1. Identitas
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
@@ -323,8 +324,8 @@ EOF
           uci set network.device_lan=device
           uci set network.device_lan.name='br-lan'
           uci set network.device_lan.type='bridge'
-          for i in \$(ls /sys/class/net | grep -E 'eth|enp|ena'); do
-            uci add_list network.device_lan.ports="\$i"
+          for i in $(ls /sys/class/net | grep -E 'eth|enp|ena'); do
+            uci add_list network.device_lan.ports="$i"
           done
 
           # 2a. SET PACKET STEERING TO ENABLED (ALL CPUs) BY DEFAULT
@@ -352,7 +353,7 @@ EOF
           uci set wireless.default_radio0.network='lan'
 
           # 4. EXECUTING AUTOMATIC APK INSTALLATION
-          if [ -d /root ] && [ -n "\$(ls /root/*.apk 2>/dev/null)" ]; then
+          if [ -d /root ] && [ -n "$(ls /root/*.apk 2>/dev/null)" ]; then
             cd /root
             apk add --allow-untrusted *.apk 2>/dev/null || true
             rm -f /root/*.apk
@@ -364,7 +365,7 @@ EOF
 
           # Force Performance Mode
           for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-              echo "performance" > "\$g" 2>/dev/null
+              echo "performance" > "$g" 2>/dev/null
           done
 
           # Disable USB Autosuspend Globally & Specific Ports
@@ -452,7 +453,7 @@ EOF
           
           uci commit
           exit 0
-          EOF
+          LEMSETUP
           chmod +x files/etc/uci-defaults/99-lemwrt-final
 
       - name: Load Configuration
