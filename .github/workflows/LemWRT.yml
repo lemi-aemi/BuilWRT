@@ -302,8 +302,8 @@ EOF
           
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-
-      - name: Inject Custom DNA (Ultimate Branding, Auto-Install APK & Layout)
+		  
+	  - name: Inject Custom DNA (Ultimate Branding, Auto-Install APK & Layout)
         run: |
           cd openwrt
           mkdir -p files/etc/uci-defaults
