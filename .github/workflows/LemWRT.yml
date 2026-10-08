@@ -125,7 +125,7 @@ jobs:
           mkdir -p files/usr/bin
           mkdir -p files/etc/opkg/keys/
 
-          # 1. Download & Install Official Ookla Speedtest CLI Binary Langsung ke Files RootFS
+          # 1. Download & Install Official Ookla Speedtest CLI Binary
           wget -O /tmp/ookla-speedtest.tgz https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz
           tar -xzf /tmp/ookla-speedtest.tgz -C files/usr/bin/ speedtest
           chmod +x files/usr/bin/speedtest
@@ -182,7 +182,7 @@ jobs:
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
           (echo 'mi1003'; echo 'mi1003') | passwd root
 
-          # 2. Universal Bridge LAN
+          # 2. Universal Bridge LAN & Global Network Settings
           uci delete network.lan
           uci set network.lan=interface
           uci set network.lan.device='br-lan'
@@ -196,7 +196,10 @@ jobs:
             uci add_list network.device_lan.ports="\$i"
           done
 
-          # 2a. USB Tethering
+          # 2a. SET PACKET STEERING TO ENABLED (ALL CPUs) BY DEFAULT
+          uci set network.globals.packet_steering='1' 2>/dev/null || true
+
+          # 2b. USB Tethering
           uci set network.wan_usb=interface
           uci set network.wan_usb.proto='dhcp'
           uci set network.wan_usb.device='usb0'
@@ -224,28 +227,45 @@ jobs:
             rm -f /root/*.apk
           fi
 
-          # 5. AUTO-ENABLE & START BANDIX PLUS SERVICE
+          # 5. INJEKSI AUTOMATIS KE /etc/rc.local (CPU Performance & USB Autosuspend Fix)
+          cat << 'RCLOCAL' > /etc/rc.local
+          #!/bin/sh
+
+          # Force Performance Mode
+          for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+              echo "performance" > "\$g" 2>/dev/null
+          done
+
+          # Disable USB Autosuspend Globally & Specific Ports
+          echo -1 > /sys/module/usbcore/parameters/autosuspend
+          echo -1 > /sys/bus/usb/devices/2-1/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/9-1/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb1/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb10/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb2/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb3/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb4/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb5/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb6/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb7/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb8/power/autosuspend_delay_ms 2>/dev/null
+          echo -1 > /sys/bus/usb/devices/usb9/power/autosuspend_delay_ms 2>/dev/null
+
+          exit 0
+          RCLOCAL
+          chmod +x /etc/rc.local
+
+          mkdir -p /etc/modprobe.d
+          echo "options usbcore autosuspend=-1" > /etc/modprobe.d/disable-usb-autosuspend.conf
+
+          # 6. AUTO-ENABLE & START BANDIX PLUS SERVICE
           uci set bandix_plus.main.enabled='1' 2>/dev/null || uci set bandix.main.enabled='1' 2>/dev/null || true
           uci commit bandix_plus 2>/dev/null || uci commit bandix 2>/dev/null || true
           /etc/init.d/bandix-plus enable 2>/dev/null || /etc/init.d/bandix enable 2>/dev/null || true
           /etc/init.d/bandix-plus start 2>/dev/null || /etc/init.d/bandix start 2>/dev/null || true
 
-          # 6. PENDAFTARAN TEMA LENGKAP KE DROPDOWN LUCI DESIGN MENU
-          uci set luci.themes.Vantage='/luci-static/vantage'
-          uci set luci.themes.Proton='/luci-static/proton2025'
-          uci set luci.themes.Arwi='/luci-static/arwi'
-          uci set luci.themes.Argon='/luci-static/argon'
-
-          # Theme Default Setup: VANTAGE sebagai tema default utama
-          if [ -d /www/luci-static/vantage ] || [ -d /www/luci-static/luci-theme-vantage ]; then
-            uci set luci.main.mediaurlbase='/luci-static/vantage'
-          elif [ -d /www/luci-static/proton2025 ] || [ -d /www/luci-static/proton ] || [ -d /www/luci-static/luci-theme-proton2025 ]; then
-            uci set luci.main.mediaurlbase='/luci-static/proton2025'
-          elif [ -d /www/luci-static/arwi ] || [ -d /www/luci-static/luci-theme-arwi ]; then
-            uci set luci.main.mediaurlbase='/luci-static/arwi'
-          else
-            uci set luci.main.mediaurlbase='/luci-static/argon'
-          fi
+          # 7. PENDAFTARAN TEMA DAN DASHBOARD SECARA AUTO
+          uci set luci.main.mediaurlbase='/luci-static/vantage' 2>/dev/null || uci set luci.main.mediaurlbase='/luci-static/argon'
           uci commit luci
 
           # Clear LuCI Cache & Rebuild Menu Index
@@ -255,9 +275,14 @@ jobs:
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
 
-          # 7. RE-GROUPING MENU
+          # 8. RE-GROUPING MENU & REGISTER DASHBOARD
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
+
+          # DASHBOARDS Grouping
+          [ -f /usr/share/luci/menu.d/luci-app-vantage.json ] && sed -i 's/"admin\/status"/"admin\/status\/vantage"/g' /usr/share/luci/menu.d/luci-app-vantage.json
+          [ -f /usr/share/luci/menu.d/luci-app-arwi-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/arwi"/g' /usr/share/luci/menu.d/luci-app-arwi-dashboard.json
+          [ -f /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/proton"/g' /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json
 
           # MODEM Group
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
@@ -268,13 +293,12 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-modemdata.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemdata.json
           [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
           [ -f /usr/share/luci/menu.d/luci-app-5gmodem.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-5gmodem.json
-          [ -f /usr/share/luci/menu.d/luci-app-5gmodem.json ] && sed -i 's/"admin\/status"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-5gmodem.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           
-          # SPEEDTEST Grouping Khusus (NetSpeedTest, Speedtest Onyx & iPerf3 Server dari Kiddin9)
+          # SPEEDTEST Grouping
           [ -f /usr/share/luci/menu.d/luci-app-netspeedtest.json ] && sed -i 's/"admin\/network"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-netspeedtest.json
-          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/status"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
+          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
           [ -f /usr/share/luci/menu.d/luci-app-iperf3-server.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3-server.json
 
           # SERVICES Group
@@ -318,6 +342,9 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
           
+          # CPU Governor Control Tools
+          echo "CONFIG_PACKAGE_cpufrequtils=y" >> .config
+          
           # USB Host Controllers & USB Utilities Support (lsusb)
           echo "CONFIG_PACKAGE_kmod-usb-core=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb2=y" >> .config
@@ -360,7 +387,7 @@ jobs:
           echo "CONFIG_PACKAGE_libiwinfo=y" >> .config
           echo "CONFIG_PACKAGE_libiwinfo-lua=y" >> .config
           
-          # Themes & Dashboards (Vantage Theme & App Modul Ekosistem)
+          # Themes & Dashboards
           echo "CONFIG_PACKAGE_luci-theme-vantage=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-vantage=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-proton2025=y" >> .config
@@ -373,7 +400,7 @@ jobs:
           # Paket TinyFileManager Muink
           echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
           
-          # Dependensi PHP8 Lengkap untuk TinyFileManager Core Backend
+          # Dependensi PHP8 Lengkap
           echo "CONFIG_PACKAGE_php8=y" >> .config
           echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
           echo "CONFIG_PACKAGE_php8-mod-ctype=y" >> .config
@@ -561,11 +588,11 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-poweroff=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
           echo "CONFIG_PACKAGE_apcontroller=y" >> .config
-          # Driver LAN PCIe High-End (Intel Server Grade)
+          # Driver LAN PCIe High-End
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
           echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-forcedeth=y" >> .config
-          # Hardware Support (Intel/Realtek)
+          # Hardware Support
           echo "CONFIG_PACKAGE_igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igc=y" >> .config
