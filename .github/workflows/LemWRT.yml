@@ -72,7 +72,138 @@ jobs:
             cp -a /tmp/lemi-imei-repo/package/* . 2>/dev/null || true
           fi
           rm -rf /tmp/lemi-imei-repo
-          
+
+          # ----------------------------------------------------
+          # INJEKSI CUSTOM LUCI APP FOR QMANAGER (3 MODEMS SUPPORT)
+          # ----------------------------------------------------
+          mkdir -p luci-app-qmanager/luasrc/controller/
+          mkdir -p luci-app-qmanager/luasrc/model/cbi/qmanager/
+          mkdir -p luci-app-qmanager/luasrc/view/qmanager/
+          mkdir -p luci-app-qmanager/root/etc/config/
+
+          # 1. Config Default (3 Modems IP)
+          cat << 'EOF' > luci-app-qmanager/root/etc/config/qmanager
+config qmanager 'main'
+	option modem1_name 'Modem 1 (Primary)'
+	option modem1_ip '192.168.224.1'
+	option modem1_port '80'
+	option modem2_name 'Modem 2 (Secondary)'
+	option modem2_ip '192.168.8.1'
+	option modem2_port '80'
+	option modem3_name 'Modem 3 (Backup)'
+	option modem3_ip '192.168.9.1'
+	option modem3_port '80'
+EOF
+
+          # 2. Controller LuCI
+          cat << 'EOF' > luci-app-qmanager/luasrc/controller/qmanager.lua
+module("luci.controller.qmanager", package.seeall)
+
+function index()
+    if not nixio.fs.access("/etc/config/qmanager") then
+        return
+    end
+
+    entry({"admin", "modem", "qmanager"}, template("qmanager/iframe"), _("QManager Multi-Modem"), 1).dependent = true
+    entry({"admin", "modem", "qmanager_settings"}, cbi("qmanager/settings"), _("QManager Config"), 2).dependent = true
+end
+EOF
+
+          # 3. Model CBI (Halaman Setting 3 IP Modem)
+          cat << 'EOF' > luci-app-qmanager/luasrc/model/cbi/qmanager/settings.lua
+m = Map("qmanager", translate("QManager Multi-Modem Settings"), translate("Atur Label Nama dan IP Target untuk 3 Modem Quectel/QManager"))
+
+s = m:section(NamedSection, "main", "qmanager", translate("Konfigurasi Modem"))
+
+-- Modem 1
+s:option(Value, "modem1_name", translate("Modem 1 Label")).default = "Modem 1 (Primary)"
+s:option(Value, "modem1_ip", translate("Modem 1 IP Address")).datatype = "ip4addr"
+s:option(Value, "modem1_port", translate("Modem 1 Port")).datatype = "port"
+
+-- Modem 2
+s:option(Value, "modem2_name", translate("Modem 2 Label")).default = "Modem 2 (Secondary)"
+s:option(Value, "modem2_ip", translate("Modem 2 IP Address")).datatype = "ip4addr"
+s:option(Value, "modem2_port", translate("Modem 2 Port")).datatype = "port"
+
+-- Modem 3
+s:option(Value, "modem3_name", translate("Modem 3 Label")).default = "Modem 3 (Backup)"
+s:option(Value, "modem3_ip", translate("Modem 3 IP Address")).datatype = "ip4addr"
+s:option(Value, "modem3_port", translate("Modem 3 Port")).datatype = "port"
+
+return m
+EOF
+
+          # 4. View Template (Interactive Multi-Tab iFrame)
+          cat << 'EOF' > luci-app-qmanager/luasrc/view/qmanager/iframe.htm
+<%+header%>
+<%
+local uci = require "luci.model.uci".cursor()
+local m1_name = uci:get("qmanager", "main", "modem1_name") or "Modem 1"
+local m1_ip = uci:get("qmanager", "main", "modem1_ip") or "192.168.224.1"
+local m1_port = uci:get("qmanager", "main", "modem1_port") or "80"
+local m1_url = "http://" .. m1_ip .. ":" .. m1_port
+
+local m2_name = uci:get("qmanager", "main", "modem2_name") or "Modem 2"
+local m2_ip = uci:get("qmanager", "main", "modem2_ip") or "192.168.8.1"
+local m2_port = uci:get("qmanager", "main", "modem2_port") or "80"
+local m2_url = "http://" .. m2_ip .. ":" .. m2_port
+
+local m3_name = uci:get("qmanager", "main", "modem3_name") or "Modem 3"
+local m3_ip = uci:get("qmanager", "main", "modem3_ip") or "192.168.9.1"
+local m3_port = uci:get("qmanager", "main", "modem3_port") or "80"
+local m3_url = "http://" .. m3_ip .. ":" .. m3_port
+%>
+
+<div class="cbi-map">
+    <h2 style="margin-bottom: 10px;"><%:QManager Multi-Modem Dashboard%></h2>
+    
+    <!-- Tab Switcher Bar -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
+        <button id="btn-m1" class="btn cbi-button cbi-button-apply" onclick="switchModem('<%=m1_url%>', 'btn-m1')"><%=m1_name%> (<%=m1_ip%>)</button>
+        <button id="btn-m2" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m2_url%>', 'btn-m2')"><%=m2_name%> (<%=m2_ip%>)</button>
+        <button id="btn-m3" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m3_url%>', 'btn-m3')"><%=m3_name%> (<%=m3_ip%>)</button>
+        <a id="ext-link" class="btn cbi-button cbi-button-action" href="<%=m1_url%>" target="_blank" style="margin-left: auto;"><%:Buka Tab Baru%></a>
+    </div>
+
+    <!-- Frame Display -->
+    <div style="width: 100%; height: 85vh; border: 1px solid #333; border-radius: 8px; overflow: hidden; background: #111;">
+        <iframe id="qmanager-frame" src="<%=m1_url%>" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+</div>
+
+<script type="text/javascript">
+function switchModem(url, btnId) {
+    document.getElementById('qmanager-frame').src = url;
+    document.getElementById('ext-link').href = url;
+    
+    ['btn-m1', 'btn-m2', 'btn-m3'].forEach(function(id) {
+        var btn = document.getElementById(id);
+        if (id === btnId) {
+            btn.className = 'btn cbi-button cbi-button-apply';
+        } else {
+            btn.className = 'btn cbi-button cbi-button-neutral';
+        }
+    });
+}
+</script>
+
+<%+footer%>
+EOF
+
+          # 5. Makefile Package
+          cat << 'EOF' > luci-app-qmanager/Makefile
+include $(TOPDIR)/rules.mk
+
+LUCI_TITLE:=LuCI Support for Multi-Modem QManager Web Dashboard
+LUCI_DEPENDS:=+luci-base
+LUCI_PKGARCH:=all
+
+PKG_NAME:=luci-app-qmanager
+PKG_RELEASE:=1
+
+include $(TOPDIR)/feeds/luci/luci.mk
+EOF
+
           # Clone All-in-One NetSpeedTest & TinyFileManager dari Muink + Speedtest Onyx dari MrManiesh
           git clone --depth 1 https://github.com/muink/luci-app-netspeedtest.git
           git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git
@@ -342,6 +473,9 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
           
+          # Custom LuCI QManager App
+          echo "CONFIG_PACKAGE_luci-app-qmanager=y" >> .config
+
           # CPU Governor Control Tools
           echo "CONFIG_PACKAGE_cpufrequtils=y" >> .config
           
