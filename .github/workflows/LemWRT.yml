@@ -72,126 +72,126 @@ jobs:
 
           # 1. Config Default (3 Modems IP)
           cat << 'QMCONFIG' > luci-app-qmanager/root/etc/config/qmanager
-config qmanager 'main'
-	option modem1_name 'Modem 1 (Primary)'
-	option modem1_ip '192.168.224.1'
-	option modem1_port '80'
-	option modem2_name 'Modem 2 (Secondary)'
-	option modem2_ip '192.168.8.1'
-	option modem2_port '80'
-	option modem3_name 'Modem 3 (Backup)'
-	option modem3_ip '192.168.9.1'
-	option modem3_port '80'
-QMCONFIG
+          config qmanager 'main'
+          	option modem1_name 'Modem 1 (Primary)'
+          	option modem1_ip '192.168.224.1'
+          	option modem1_port '80'
+          	option modem2_name 'Modem 2 (Secondary)'
+          	option modem2_ip '192.168.8.1'
+          	option modem2_port '80'
+          	option modem3_name 'Modem 3 (Backup)'
+          	option modem3_ip '192.168.9.1'
+          	option modem3_port '80'
+          QMCONFIG
 
           # 2. Controller LuCI
           cat << 'QMCTRL' > luci-app-qmanager/luasrc/controller/qmanager.lua
-module("luci.controller.qmanager", package.seeall)
+          module("luci.controller.qmanager", package.seeall)
 
-function index()
-    if not nixio.fs.access("/etc/config/qmanager") then
-        return
-    end
+          function index()
+              if not nixio.fs.access("/etc/config/qmanager") then
+                  return
+              end
 
-    entry({"admin", "modem", "qmanager"}, template("qmanager/iframe"), _("QManager Multi-Modem"), 1).dependent = true
-    entry({"admin", "modem", "qmanager_settings"}, cbi("qmanager/settings"), _("QManager Config"), 2).dependent = true
-end
-QMCTRL
+              entry({"admin", "modem", "qmanager"}, template("qmanager/iframe"), _("QManager Multi-Modem"), 1).dependent = true
+              entry({"admin", "modem", "qmanager_settings"}, cbi("qmanager/settings"), _("QManager Config"), 2).dependent = true
+          end
+          QMCTRL
 
           # 3. Model CBI (Halaman Setting 3 IP Modem)
           cat << 'QMSET' > luci-app-qmanager/luasrc/model/cbi/qmanager/settings.lua
-m = Map("qmanager", translate("QManager Multi-Modem Settings"), translate("Atur Label Nama dan IP Target untuk 3 Modem Quectel/QManager"))
+          m = Map("qmanager", translate("QManager Multi-Modem Settings"), translate("Atur Label Nama dan IP Target untuk 3 Modem Quectel/QManager"))
 
-s = m:section(NamedSection, "main", "qmanager", translate("Konfigurasi Modem"))
+          s = m:section(NamedSection, "main", "qmanager", translate("Konfigurasi Modem"))
 
--- Modem 1
-s:option(Value, "modem1_name", translate("Modem 1 Label")).default = "Modem 1 (Primary)"
-s:option(Value, "modem1_ip", translate("Modem 1 IP Address")).datatype = "ip4addr"
-s:option(Value, "modem1_port", translate("Modem 1 Port")).datatype = "port"
+          -- Modem 1
+          s:option(Value, "modem1_name", translate("Modem 1 Label")).default = "Modem 1 (Primary)"
+          s:option(Value, "modem1_ip", translate("Modem 1 IP Address")).datatype = "ip4addr"
+          s:option(Value, "modem1_port", translate("Modem 1 Port")).datatype = "port"
 
--- Modem 2
-s:option(Value, "modem2_name", translate("Modem 2 Label")).default = "Modem 2 (Secondary)"
-s:option(Value, "modem2_ip", translate("Modem 2 IP Address")).datatype = "ip4addr"
-s:option(Value, "modem2_port", translate("Modem 2 Port")).datatype = "port"
+          -- Modem 2
+          s:option(Value, "modem2_name", translate("Modem 2 Label")).default = "Modem 2 (Secondary)"
+          s:option(Value, "modem2_ip", translate("Modem 2 IP Address")).datatype = "ip4addr"
+          s:option(Value, "modem2_port", translate("Modem 2 Port")).datatype = "port"
 
--- Modem 3
-s:option(Value, "modem3_name", translate("Modem 3 Label")).default = "Modem 3 (Backup)"
-s:option(Value, "modem3_ip", translate("Modem 3 IP Address")).datatype = "ip4addr"
-s:option(Value, "modem3_port", translate("Modem 3 Port")).datatype = "port"
+          -- Modem 3
+          s:option(Value, "modem3_name", translate("Modem 3 Label")).default = "Modem 3 (Backup)"
+          s:option(Value, "modem3_ip", translate("Modem 3 IP Address")).datatype = "ip4addr"
+          s:option(Value, "modem3_port", translate("Modem 3 Port")).datatype = "port"
 
-return m
-QMSET
+          return m
+          QMSET
 
           # 4. View Template (Interactive Multi-Tab iFrame)
           cat << 'QMVIEW' > luci-app-qmanager/luasrc/view/qmanager/iframe.htm
-<%+header%>
-<%
-local uci = require "luci.model.uci".cursor()
-local m1_name = uci:get("qmanager", "main", "modem1_name") or "Modem 1"
-local m1_ip = uci:get("qmanager", "main", "modem1_ip") or "192.168.224.1"
-local m1_port = uci:get("qmanager", "main", "modem1_port") or "80"
-local m1_url = "http://" .. m1_ip .. ":" .. m1_port
+          <%+header%>
+          <%
+          local uci = require "luci.model.uci".cursor()
+          local m1_name = uci:get("qmanager", "main", "modem1_name") or "Modem 1"
+          local m1_ip = uci:get("qmanager", "main", "modem1_ip") or "192.168.224.1"
+          local m1_port = uci:get("qmanager", "main", "modem1_port") or "80"
+          local m1_url = "http://" .. m1_ip .. ":" .. m1_port
 
-local m2_name = uci:get("qmanager", "main", "modem2_name") or "Modem 2"
-local m2_ip = uci:get("qmanager", "main", "modem2_ip") or "192.168.8.1"
-local m2_port = uci:get("qmanager", "main", "modem2_port") or "80"
-local m2_url = "http://" .. m2_ip .. ":" .. m2_port
+          local m2_name = uci:get("qmanager", "main", "modem2_name") or "Modem 2"
+          local m2_ip = uci:get("qmanager", "main", "modem2_ip") or "192.168.8.1"
+          local m2_port = uci:get("qmanager", "main", "modem2_port") or "80"
+          local m2_url = "http://" .. m2_ip .. ":" .. m2_port
 
-local m3_name = uci:get("qmanager", "main", "modem3_name") or "Modem 3"
-local m3_ip = uci:get("qmanager", "main", "modem3_ip") or "192.168.9.1"
-local m3_port = uci:get("qmanager", "main", "modem3_port") or "80"
-local m3_url = "http://" .. m3_ip .. ":" .. m3_port
-%>
+          local m3_name = uci:get("qmanager", "main", "modem3_name") or "Modem 3"
+          local m3_ip = uci:get("qmanager", "main", "modem3_ip") or "192.168.9.1"
+          local m3_port = uci:get("qmanager", "main", "modem3_port") or "80"
+          local m3_url = "http://" .. m3_ip .. ":" .. m3_port
+          %>
 
-<div class="cbi-map">
-    <h2 style="margin-bottom: 10px;"><%:QManager Multi-Modem Dashboard%></h2>
-    
-    <!-- Tab Switcher Bar -->
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-        <button id="btn-m1" class="btn cbi-button cbi-button-apply" onclick="switchModem('<%=m1_url%>', 'btn-m1')"><%=m1_name%> (<%=m1_ip%>)</button>
-        <button id="btn-m2" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m2_url%>', 'btn-m2')"><%=m2_name%> (<%=m2_ip%>)</button>
-        <button id="btn-m3" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m3_url%>', 'btn-m3')"><%=m3_name%> (<%=m3_ip%>)</button>
-        <a id="ext-link" class="btn cbi-button cbi-button-action" href="<%=m1_url%>" target="_blank" style="margin-left: auto;"><%:Buka Tab Baru%></a>
-    </div>
+          <div class="cbi-map">
+              <h2 style="margin-bottom: 10px;"><%:QManager Multi-Modem Dashboard%></h2>
+              
+              <!-- Tab Switcher Bar -->
+              <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
+                  <button id="btn-m1" class="btn cbi-button cbi-button-apply" onclick="switchModem('<%=m1_url%>', 'btn-m1')"><%=m1_name%> (<%=m1_ip%>)</button>
+                  <button id="btn-m2" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m2_url%>', 'btn-m2')"><%=m2_name%> (<%=m2_ip%>)</button>
+                  <button id="btn-m3" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m3_url%>', 'btn-m3')"><%=m3_name%> (<%=m3_ip%>)</button>
+                  <a id="ext-link" class="btn cbi-button cbi-button-action" href="<%=m1_url%>" target="_blank" style="margin-left: auto;"><%:Buka Tab Baru%></a>
+              </div>
 
-    <!-- Frame Display -->
-    <div style="width: 100%; height: 85vh; border: 1px solid #333; border-radius: 8px; overflow: hidden; background: #111;">
-        <iframe id="qmanager-frame" src="<%=m1_url%>" style="width: 100%; height: 100%; border: none;"></iframe>
-    </div>
-</div>
+              <!-- Frame Display -->
+              <div style="width: 100%; height: 85vh; border: 1px solid #333; border-radius: 8px; overflow: hidden; background: #111;">
+                  <iframe id="qmanager-frame" src="<%=m1_url%>" style="width: 100%; height: 100%; border: none;"></iframe>
+              </div>
+          </div>
 
-<script type="text/javascript">
-function switchModem(url, btnId) {
-    document.getElementById('qmanager-frame').src = url;
-    document.getElementById('ext-link').href = url;
-    
-    ['btn-m1', 'btn-m2', 'btn-m3'].forEach(function(id) {
-        var btn = document.getElementById(id);
-        if (id === btnId) {
-            btn.className = 'btn cbi-button cbi-button-apply';
-        } else {
-            btn.className = 'btn cbi-button cbi-button-neutral';
-        }
-    });
-}
-</script>
+          <script type="text/javascript">
+          function switchModem(url, btnId) {
+              document.getElementById('qmanager-frame').src = url;
+              document.getElementById('ext-link').href = url;
+              
+              ['btn-m1', 'btn-m2', 'btn-m3'].forEach(function(id) {
+                  var btn = document.getElementById(id);
+                  if (id === btnId) {
+                      btn.className = 'btn cbi-button cbi-button-apply';
+                  } else {
+                      btn.className = 'btn cbi-button cbi-button-neutral';
+                  }
+              });
+          }
+          </script>
 
-<%+footer%>
-QMVIEW
+          <%+footer%>
+          QMVIEW
 
           # 5. Makefile Package
           cat << 'QMMAKE' > luci-app-qmanager/Makefile
-include $(TOPDIR)/rules.mk
+          include \$(TOPDIR)/rules.mk
 
-LUCI_TITLE:=LuCI Support for Multi-Modem QManager Web Dashboard
-LUCI_DEPENDS:=+luci-base
-LUCI_PKGARCH:=all
+          LUCI_TITLE:=LuCI Support for Multi-Modem QManager Web Dashboard
+          LUCI_DEPENDS:=+luci-base
+          LUCI_PKGARCH:=all
 
-PKG_NAME:=luci-app-qmanager
-PKG_RELEASE:=1
+          PKG_NAME:=luci-app-qmanager
+          PKG_RELEASE:=1
 
-include $(TOPDIR)/feeds/luci/luci.mk
-QMMAKE
+          include \$(TOPDIR)/feeds/luci/luci.mk
+          QMMAKE
 
           # Integrasi Repository Eksternal IMEI Changer dari Lemi-Aemi
           rm -rf /tmp/lemi-imei-repo
@@ -324,8 +324,8 @@ QMMAKE
           uci set network.device_lan=device
           uci set network.device_lan.name='br-lan'
           uci set network.device_lan.type='bridge'
-          for i in $(ls /sys/class/net | grep -E 'eth|enp|ena'); do
-            uci add_list network.device_lan.ports="$i"
+          for i in \$(ls /sys/class/net | grep -E 'eth|enp|ena'); do
+            uci add_list network.device_lan.ports="\$i"
           done
 
           # 2a. SET PACKET STEERING TO ENABLED (ALL CPUs) BY DEFAULT
@@ -353,19 +353,22 @@ QMMAKE
           uci set wireless.default_radio0.network='lan'
 
           # 4. EXECUTING AUTOMATIC APK INSTALLATION
-          if [ -d /root ] && [ -n "$(ls /root/*.apk 2>/dev/null)" ]; then
+          if [ -d /root ] && [ -n "\$(ls /root/*.apk 2>/dev/null)" ]; then
             cd /root
             apk add --allow-untrusted *.apk 2>/dev/null || true
             rm -f /root/*.apk
           fi
+          LEMSETUP
+          chmod +x files/etc/uci-defaults/99-lemwrt-final
 
           # 5. INJEKSI AUTOMATIS KE /etc/rc.local (CPU Performance & USB Autosuspend Fix)
-          cat << 'RCLOCAL' > /etc/rc.local
+          mkdir -p files/etc
+          cat << 'RCLOCAL' > files/etc/rc.local
           #!/bin/sh
 
           # Force Performance Mode
           for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-              echo "performance" > "$g" 2>/dev/null
+              echo "performance" > "\$g" 2>/dev/null
           done
 
           # Disable USB Autosuspend Globally & Specific Ports
@@ -385,12 +388,14 @@ QMMAKE
 
           exit 0
           RCLOCAL
-          chmod +x /etc/rc.local
+          chmod +x files/etc/rc.local
 
-          mkdir -p /etc/modprobe.d
-          echo "options usbcore autosuspend=-1" > /etc/modprobe.d/disable-usb-autosuspend.conf
+          mkdir -p files/etc/modprobe.d
+          echo "options usbcore autosuspend=-1" > files/etc/modprobe.d/disable-usb-autosuspend.conf
 
-          # 6. AUTO-ENABLE & START BANDIX PLUS SERVICE
+          # 6. AUTO-ENABLE & START BANDIX PLUS SERVICE DLL
+          cat << 'ENDSETUP' >> files/etc/uci-defaults/99-lemwrt-final
+
           uci set bandix_plus.main.enabled='1' 2>/dev/null || uci set bandix.main.enabled='1' 2>/dev/null || true
           uci commit bandix_plus 2>/dev/null || uci commit bandix 2>/dev/null || true
           /etc/init.d/bandix-plus enable 2>/dev/null || /etc/init.d/bandix enable 2>/dev/null || true
@@ -453,8 +458,7 @@ QMMAKE
           
           uci commit
           exit 0
-          LEMSETUP
-          chmod +x files/etc/uci-defaults/99-lemwrt-final
+          ENDSETUP
 
       - name: Load Configuration
         run: |
