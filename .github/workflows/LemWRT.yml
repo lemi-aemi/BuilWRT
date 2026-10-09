@@ -303,16 +303,33 @@ jobs:
           
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-
+        
       - name: Inject Custom DNA (Ultimate Branding, Auto-Install APK & Layout)
         run: |
           cd openwrt
           mkdir -p files/etc/uci-defaults
+          mkdir -p files/etc/modprobe.d
+          
+          # Fix USB Autosuspend lewat Modprobe
+          echo "options usbcore autosuspend=-1" > files/etc/modprobe.d/disable-usb-autosuspend.conf
+
+          # RC.LOCAL (CPU Performance)
+          cat << 'RCLOCAL' > files/etc/rc.local
+          #!/bin/sh
+          for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+              echo "performance" > "$g" 2>/dev/null
+          done
+          exit 0
+          RCLOCAL
+          chmod +x files/etc/rc.local
+
+          # INJEKSI UCI DEFAULTS
           cat << 'LEMSETUP' > files/etc/uci-defaults/99-lemwrt-final
           #!/bin/sh
-          # 1. Identitas
+          
+          # 1. Identitas (Perintah 'passwd root' dihapus agar tidak HANG saat first boot)
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
-          (echo 'mi1003'; echo 'mi1003') | passwd root
+          uci commit system
 
           # 2. Universal Bridge LAN & Global Network Settings
           uci delete network.lan
@@ -324,14 +341,12 @@ jobs:
           uci set network.device_lan=device
           uci set network.device_lan.name='br-lan'
           uci set network.device_lan.type='bridge'
-          for i in \$(ls /sys/class/net | grep -E 'eth|enp|ena'); do
-            uci add_list network.device_lan.ports="\$i"
+          for i in $(ls /sys/class/net | grep -E 'eth|enp|ena'); do
+            uci add_list network.device_lan.ports="$i"
           done
 
-          # 2a. SET PACKET STEERING TO ENABLED (ALL CPUs) BY DEFAULT
           uci set network.globals.packet_steering='1' 2>/dev/null || true
 
-          # 2b. USB Tethering
           uci set network.wan_usb=interface
           uci set network.wan_usb.proto='dhcp'
           uci set network.wan_usb.device='usb0'
@@ -351,77 +366,39 @@ jobs:
           uci set wireless.default_radio0.key='mi123456'
           uci set wireless.default_radio0.encryption='sae-mixed'
           uci set wireless.default_radio0.network='lan'
+          uci commit wireless
 
-          # 4. EXECUTING AUTOMATIC APK INSTALLATION
-          if [ -d /root ] && [ -n "\$(ls /root/*.apk 2>/dev/null)" ]; then
-            cd /root
-            apk add --allow-untrusted *.apk 2>/dev/null || true
-            rm -f /root/*.apk
-          fi
-          LEMSETUP
-          chmod +x files/etc/uci-defaults/99-lemwrt-final
+          # 4. EXECUTING AUTOMATIC APK INSTALLATION (DI-BACKGROUND MENGHINDARI BOOT HANG)
+          (
+            sleep 15
+            if [ -d /root ] && [ -n "$(ls /root/*.apk 2>/dev/null)" ]; then
+              cd /root
+              apk add --allow-untrusted *.apk >/dev/null 2>&1
+              rm -f /root/*.apk
+            fi
+          ) &
 
-          # 5. INJEKSI AUTOMATIS KE /etc/rc.local (CPU Performance & USB Autosuspend Fix)
-          mkdir -p files/etc
-          cat << 'RCLOCAL' > files/etc/rc.local
-          #!/bin/sh
-
-          # Force Performance Mode
-          for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-              echo "performance" > "\$g" 2>/dev/null
-          done
-
-          # Disable USB Autosuspend Globally & Specific Ports
-          echo -1 > /sys/module/usbcore/parameters/autosuspend
-          echo -1 > /sys/bus/usb/devices/2-1/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/9-1/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb1/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb10/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb2/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb3/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb4/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb5/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb6/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb7/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb8/power/autosuspend_delay_ms 2>/dev/null
-          echo -1 > /sys/bus/usb/devices/usb9/power/autosuspend_delay_ms 2>/dev/null
-
-          exit 0
-          RCLOCAL
-          chmod +x files/etc/rc.local
-
-          mkdir -p files/etc/modprobe.d
-          echo "options usbcore autosuspend=-1" > files/etc/modprobe.d/disable-usb-autosuspend.conf
-
-          # 6. AUTO-ENABLE & START BANDIX PLUS SERVICE DLL
-          cat << 'ENDSETUP' >> files/etc/uci-defaults/99-lemwrt-final
-
+          # 5. AUTO-ENABLE BANDIX (HANYA ENABLE, JANGAN "start" KARENA BIKIN DEADLOCK)
           uci set bandix_plus.main.enabled='1' 2>/dev/null || uci set bandix.main.enabled='1' 2>/dev/null || true
           uci commit bandix_plus 2>/dev/null || uci commit bandix 2>/dev/null || true
           /etc/init.d/bandix-plus enable 2>/dev/null || /etc/init.d/bandix enable 2>/dev/null || true
-          /etc/init.d/bandix-plus start 2>/dev/null || /etc/init.d/bandix start 2>/dev/null || true
 
-          # 7. PENDAFTARAN TEMA DAN DASHBOARD SECARA AUTO
+          # 6. PENDAFTARAN TEMA DAN OPTIMASI
           uci set luci.main.mediaurlbase='/luci-static/vantage' 2>/dev/null || uci set luci.main.mediaurlbase='/luci-static/argon'
           uci commit luci
-
-          # Clear LuCI Cache & Rebuild Menu Index
           rm -f /tmp/luci-indexcache /tmp/luci-modulecache/*
 
-          # Optimasi ModemManager
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
 
-          # 8. RE-GROUPING MENU & REGISTER DASHBOARD
+          # 7. RE-GROUPING MENU & REGISTER DASHBOARD
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
 
-          # DASHBOARDS Grouping
           [ -f /usr/share/luci/menu.d/luci-app-vantage.json ] && sed -i 's/"admin\/status"/"admin\/status\/vantage"/g' /usr/share/luci/menu.d/luci-app-vantage.json
           [ -f /usr/share/luci/menu.d/luci-app-arwi-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/arwi"/g' /usr/share/luci/menu.d/luci-app-arwi-dashboard.json
           [ -f /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/proton"/g' /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json
 
-          # MODEM Group
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
           [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
@@ -433,17 +410,14 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           
-          # SPEEDTEST Grouping
           [ -f /usr/share/luci/menu.d/luci-app-netspeedtest.json ] && sed -i 's/"admin\/network"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-netspeedtest.json
           [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
           [ -f /usr/share/luci/menu.d/luci-app-iperf3-server.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3-server.json
 
-          # SERVICES Group
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g; s/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-bandix.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g; s/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix.json
           [ -f /usr/share/luci/menu.d/luci-app-ddnsto.json ] && sed -i 's/"admin\/services"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ddnsto.json
           
-          # DNS, VPN, WIFI, NAS
           [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
           [ -f /usr/share/luci/menu.d/luci-app-adblock-plus.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adblock-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-openvpn.json ] && sed -i 's/"admin\/services"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-openvpn.json
@@ -458,7 +432,8 @@ jobs:
           
           uci commit
           exit 0
-          ENDSETUP
+          LEMSETUP
+          chmod +x files/etc/uci-defaults/99-lemwrt-final
 
       - name: Load Configuration
         run: |
