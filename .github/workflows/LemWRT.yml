@@ -39,19 +39,31 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
-          # CUSTOM BRANDING & LOGIN TEXT
-          sed -i 's/OpenWrt/LemWRT/g' include/target.mk
-          sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
-          sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
+          
           # AUTO-DETECT KERNEL TERBARU DARI SERVER OPENWRT
           LATEST_KMOD_VER=$(curl -s https://downloads.openwrt.org/snapshots/targets/x86/64/kmods/ | grep -oE 'kernel_6\.[0-9]+\.[0-9]+-[0-9]+-[a-f0-9]{32}' | head -n 1 | sed 's/kernel_//')
           
           if [ -n "$LATEST_KMOD_VER" ]; then
-            echo "LemWRT Snapshots (Kernel $LATEST_KMOD_VER)" > package/base-files/files/etc/openwrt_version
-            echo "Detected Latest Kernel Version: $LATEST_KMOD_VER"
+            VER_TAG="LemWRT Snapshots (Kernel $LATEST_KMOD_VER)"
           else
-            echo "LemWRT Snapshots (Kernel 6.18.54-1-d0b7e90eb09c21d99e46e3a687a2a66d)" > package/base-files/files/etc/openwrt_version
+            VER_TAG="LemWRT Snapshots (Kernel 6.18.55)"
           fi
+      
+          # 1. OVERRIDE TEXT BANNER & VERSION FILE
+          echo "$VER_TAG" > package/base-files/files/etc/openwrt_version
+          sed -i 's/OpenWrt/LemWRT/g' include/target.mk
+          sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
+      
+          # 2. OVERRIDE STRUKTUR OS-RELEASE (YANG DIBACA LUCI STATUS)
+          sed -i "s/NAME=\"OpenWrt\"/NAME=\"LemWRT\"/g" package/base-files/files/usr/lib/os-release
+          sed -i "s/ID=\"openwrt\"/ID=\"lemwrt\"/g" package/base-files/files/usr/lib/os-release
+          sed -i "s/BUILD_ID=\".*\"/BUILD_ID=\"$VER_TAG\"/g" package/base-files/files/usr/lib/os-release
+          sed -i "s/PRETTY_NAME=\".*\"/PRETTY_NAME=\"$VER_TAG\"/g" package/base-files/files/usr/lib/os-release
+          sed -i "s/OPENWRT_RELEASE=\".*\"/OPENWRT_RELEASE=\"$VER_TAG\"/g" package/base-files/files/usr/lib/os-release
+      
+          # 3. FORCE REPLACE STRING OPENWRT SNAPSHOT DI CONFIG GENERATE
+          sed -i "s/OpenWrt SNAPSHOT/LemWRT SNAPSHOT/g" package/base-files/files/bin/config_generate 2>/dev/null || true
+      
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
