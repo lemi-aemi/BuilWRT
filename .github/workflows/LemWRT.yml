@@ -39,12 +39,10 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
-
           # CUSTOM BRANDING & LOGIN TEXT
           sed -i 's/OpenWrt/LemWRT/g' include/target.mk
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/usr/lib/os-release
           sed -i 's/OpenWrt/LemWRT/g' package/base-files/files/etc/banner
-
           # AUTO-DETECT KERNEL TERBARU DARI SERVER OPENWRT
           LATEST_KMOD_VER=$(curl -s https://downloads.openwrt.org/snapshots/targets/x86/64/kmods/ | grep -oE 'kernel_6\.[0-9]+\.[0-9]+-[0-9]+-[a-f0-9]{32}' | head -n 1 | sed 's/kernel_//')
           
@@ -54,145 +52,12 @@ jobs:
           else
             echo "LemWRT Snapshots (Kernel 6.18.54-1-d0b7e90eb09c21d99e46e3a687a2a66d)" > package/base-files/files/etc/openwrt_version
           fi
-
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
       - name: Add Custom Apps & Themes
         run: |
           cd openwrt/package
-
-          # ----------------------------------------------------
-          # INJEKSI CUSTOM LUCI APP FOR QMANAGER (3 MODEMS SUPPORT)
-          # ----------------------------------------------------
-          mkdir -p luci-app-qmanager/luasrc/controller/
-          mkdir -p luci-app-qmanager/luasrc/model/cbi/qmanager/
-          mkdir -p luci-app-qmanager/luasrc/view/qmanager/
-          mkdir -p luci-app-qmanager/root/etc/config/
-
-          # 1. Config Default (3 Modems IP)
-          cat << 'QMCONFIG' > luci-app-qmanager/root/etc/config/qmanager
-          config qmanager 'main'
-          	option modem1_name 'Modem 1 (Primary)'
-          	option modem1_ip '192.168.224.1'
-          	option modem1_port '80'
-          	option modem2_name 'Modem 2 (Secondary)'
-          	option modem2_ip '192.168.8.1'
-          	option modem2_port '80'
-          	option modem3_name 'Modem 3 (Backup)'
-          	option modem3_ip '192.168.9.1'
-          	option modem3_port '80'
-          QMCONFIG
-
-          # 2. Controller LuCI
-          cat << 'QMCTRL' > luci-app-qmanager/luasrc/controller/qmanager.lua
-          module("luci.controller.qmanager", package.seeall)
-
-          function index()
-              if not nixio.fs.access("/etc/config/qmanager") then
-                  return
-              end
-
-              entry({"admin", "modem", "qmanager"}, template("qmanager/iframe"), _("QManager Multi-Modem"), 1).dependent = true
-              entry({"admin", "modem", "qmanager_settings"}, cbi("qmanager/settings"), _("QManager Config"), 2).dependent = true
-          end
-          QMCTRL
-
-          # 3. Model CBI (Halaman Setting 3 IP Modem)
-          cat << 'QMSET' > luci-app-qmanager/luasrc/model/cbi/qmanager/settings.lua
-          m = Map("qmanager", translate("QManager Multi-Modem Settings"), translate("Atur Label Nama dan IP Target untuk 3 Modem Quectel/QManager"))
-
-          s = m:section(NamedSection, "main", "qmanager", translate("Konfigurasi Modem"))
-
-          -- Modem 1
-          s:option(Value, "modem1_name", translate("Modem 1 Label")).default = "Modem 1 (Primary)"
-          s:option(Value, "modem1_ip", translate("Modem 1 IP Address")).datatype = "ip4addr"
-          s:option(Value, "modem1_port", translate("Modem 1 Port")).datatype = "port"
-
-          -- Modem 2
-          s:option(Value, "modem2_name", translate("Modem 2 Label")).default = "Modem 2 (Secondary)"
-          s:option(Value, "modem2_ip", translate("Modem 2 IP Address")).datatype = "ip4addr"
-          s:option(Value, "modem2_port", translate("Modem 2 Port")).datatype = "port"
-
-          -- Modem 3
-          s:option(Value, "modem3_name", translate("Modem 3 Label")).default = "Modem 3 (Backup)"
-          s:option(Value, "modem3_ip", translate("Modem 3 IP Address")).datatype = "ip4addr"
-          s:option(Value, "modem3_port", translate("Modem 3 Port")).datatype = "port"
-
-          return m
-          QMSET
-
-          # 4. View Template (Interactive Multi-Tab iFrame)
-          cat << 'QMVIEW' > luci-app-qmanager/luasrc/view/qmanager/iframe.htm
-          <%+header%>
-          <%
-          local uci = require "luci.model.uci".cursor()
-          local m1_name = uci:get("qmanager", "main", "modem1_name") or "Modem 1"
-          local m1_ip = uci:get("qmanager", "main", "modem1_ip") or "192.168.224.1"
-          local m1_port = uci:get("qmanager", "main", "modem1_port") or "80"
-          local m1_url = "http://" .. m1_ip .. ":" .. m1_port
-
-          local m2_name = uci:get("qmanager", "main", "modem2_name") or "Modem 2"
-          local m2_ip = uci:get("qmanager", "main", "modem2_ip") or "192.168.8.1"
-          local m2_port = uci:get("qmanager", "main", "modem2_port") or "80"
-          local m2_url = "http://" .. m2_ip .. ":" .. m2_port
-
-          local m3_name = uci:get("qmanager", "main", "modem3_name") or "Modem 3"
-          local m3_ip = uci:get("qmanager", "main", "modem3_ip") or "192.168.9.1"
-          local m3_port = uci:get("qmanager", "main", "modem3_port") or "80"
-          local m3_url = "http://" .. m3_ip .. ":" .. m3_port
-          %>
-
-          <div class="cbi-map">
-              <h2 style="margin-bottom: 10px;"><%:QManager Multi-Modem Dashboard%></h2>
-              
-              <!-- Tab Switcher Bar -->
-              <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-                  <button id="btn-m1" class="btn cbi-button cbi-button-apply" onclick="switchModem('<%=m1_url%>', 'btn-m1')"><%=m1_name%> (<%=m1_ip%>)</button>
-                  <button id="btn-m2" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m2_url%>', 'btn-m2')"><%=m2_name%> (<%=m2_ip%>)</button>
-                  <button id="btn-m3" class="btn cbi-button cbi-button-neutral" onclick="switchModem('<%=m3_url%>', 'btn-m3')"><%=m3_name%> (<%=m3_ip%>)</button>
-                  <a id="ext-link" class="btn cbi-button cbi-button-action" href="<%=m1_url%>" target="_blank" style="margin-left: auto;"><%:Buka Tab Baru%></a>
-              </div>
-
-              <!-- Frame Display -->
-              <div style="width: 100%; height: 85vh; border: 1px solid #333; border-radius: 8px; overflow: hidden; background: #111;">
-                  <iframe id="qmanager-frame" src="<%=m1_url%>" style="width: 100%; height: 100%; border: none;"></iframe>
-              </div>
-          </div>
-
-          <script type="text/javascript">
-          function switchModem(url, btnId) {
-              document.getElementById('qmanager-frame').src = url;
-              document.getElementById('ext-link').href = url;
-              
-              ['btn-m1', 'btn-m2', 'btn-m3'].forEach(function(id) {
-                  var btn = document.getElementById(id);
-                  if (id === btnId) {
-                      btn.className = 'btn cbi-button cbi-button-apply';
-                  } else {
-                      btn.className = 'btn cbi-button cbi-button-neutral';
-                  }
-              });
-          }
-          </script>
-
-          <%+footer%>
-          QMVIEW
-
-          # 5. Makefile Package
-          cat << 'QMMAKE' > luci-app-qmanager/Makefile
-          include \$(TOPDIR)/rules.mk
-
-          LUCI_TITLE:=LuCI Support for Multi-Modem QManager Web Dashboard
-          LUCI_DEPENDS:=+luci-base
-          LUCI_PKGARCH:=all
-
-          PKG_NAME:=luci-app-qmanager
-          PKG_RELEASE:=1
-
-          include \$(TOPDIR)/feeds/luci/luci.mk
-          QMMAKE
-
           # Integrasi Repository Eksternal IMEI Changer dari Lemi-Aemi
           rm -rf /tmp/lemi-imei-repo
           git clone --depth 1 https://github.com/lemi-aemi/build-apk.yml.git /tmp/lemi-imei-repo
@@ -209,39 +74,33 @@ jobs:
           git clone --depth 1 https://github.com/muink/luci-app-netspeedtest.git
           git clone --depth 1 https://github.com/muink/luci-app-tinyfilemanager.git
           git clone --depth 1 https://github.com/MrManiesh/luci-app-speedtest-onyx.git
-
           # Clone Bandix Plus & LuCI Mobile API Support
           git clone --depth 1 https://github.com/timsaya/luci-app-bandix-plus.git
           git clone --depth 1 https://github.com/timsaya/openwrt-bandix-plus.git
           git clone --depth 1 https://github.com/cogwheel0/luci-mobile.git
-
           # Ekstrasi Monorepo Vantage (luci-theme-vantage & luci-app-vantage)
           rm -rf /tmp/vantage-repo
           git clone --depth 1 https://github.com/anothaDev/luci-theme-vantage.git /tmp/vantage-repo
           [ -d "/tmp/vantage-repo/luci-theme-vantage" ] && cp -a /tmp/vantage-repo/luci-theme-vantage .
           [ -d "/tmp/vantage-repo/luci-app-vantage" ] && cp -a /tmp/vantage-repo/luci-app-vantage .
           rm -rf /tmp/vantage-repo
-
           # Clone Ekosistem iStore & NAS Packages
           git clone --depth 1 https://github.com/linkease/istore.git
           git clone --depth 1 https://github.com/linkease/istore-ui.git
           git clone --depth 1 https://github.com/linkease/nas-packages.git
           git clone --depth 1 https://github.com/linkease/nas-packages-luci.git
-
           # Clone Themes Lainnya (Proton 2025, ARWI, Argon)
           git clone --depth 1 https://github.com/ChesterGoodiny/luci-theme-proton2025.git
           git clone --depth 1 https://github.com/derisamedia/luci-theme-arwi.git
           git clone --depth 1 https://github.com/derisamedia/luci-app-arwi-dashboard.git
           git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git
           git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git
-
           # Clone 5G Modem Apps dari 4IceG & Repositori Lainnya
           git clone --depth 1 https://github.com/4IceG/luci-app-atinout.git
           git clone --depth 1 https://github.com/4IceG/luci-app-3ginfo-lite.git
           git clone --depth 1 https://github.com/4IceG/luci-app-internet-detector.git
           git clone --depth 1 https://github.com/4IceG/luci-app-mini-diskmanager.git
           git clone --depth 1 https://github.com/4IceG/luci-app-lite-watchdog.git
-
           git clone --depth 1 https://github.com/fildunsky/luci-app-5gmodem.git
           git clone --depth 1 https://github.com/souwei168/luci-app-store.git
           git clone --depth 1 https://github.com/esirplayground/luci-app-poweroff.git
@@ -255,18 +114,18 @@ jobs:
           mkdir -p files/tmp
           mkdir -p files/root
           mkdir -p files/usr/bin
+          mkdir -p files/usr/libexec
           mkdir -p files/etc/opkg/keys/
-
-          # 1. Download & Install Official Ookla Speedtest CLI Binary
+          # 1. Download & Install Official Ookla Speedtest CLI Binary Langsung ke Files RootFS + Symlinks
           wget -O /tmp/ookla-speedtest.tgz https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz
           tar -xzf /tmp/ookla-speedtest.tgz -C files/usr/bin/ speedtest
           chmod +x files/usr/bin/speedtest
+          ln -sf /usr/bin/speedtest files/usr/libexec/speedtest
           rm -f /tmp/ookla-speedtest.tgz
 
           # 2. Download & Extract Pre-built IPK iPerf3 Server dari Kiddin9
           mkdir -p /tmp/ipk_extract
           wget -O /tmp/ipk_extract/luci-app-iperf3-server.ipk "https://dl.openwrt.ai/packages-25.12/x86_64/kiddin9/luci-app-iperf3-server_3.0.0-r1_all.ipk"
-
           for ipk in /tmp/ipk_extract/*.ipk; do
             tar -xzf "$ipk" -C /tmp/ipk_extract/
             if [ -f /tmp/ipk_extract/data.tar.gz ]; then
@@ -285,7 +144,7 @@ jobs:
           wget -O files/root/luci-app-modemband-1.0.31-r20260215.apk https://github.com/4IceG/luci-app-modemband/releases/download/1.0.31-r20260215/luci-app-modemband-1.0.31-r20260215.apk
           wget -O files/root/luci-theme-Arwi-4.2.3_beta2-r1.apk https://github.com/derisamedia/luci-theme-arwi/releases/download/v4.2.3_beta2/luci-theme-Arwi-4.2.3_beta2-r1.apk
           wget -O files/root/luci-app-arwi-dashboard-1.2-r1.apk https://github.com/derisamedia/luci-app-arwi-dashboard/releases/download/1.2.0-APK/luci-app-arwi-dashboard-1.2-r1.apk
-
+          
           # Download REPO KEY 4IceG
           sudo mkdir -p /etc/apk/repositories.d/ /etc/apk/keys/
           echo 'https://github.com/4IceG/Modem-extras-apk/raw/refs/heads/main/myapk/packages.adb' | sudo tee -a /etc/apk/repositories.d/customfeeds.list
@@ -295,43 +154,25 @@ jobs:
           mkdir -p files/lib/firmware/mediatek/mt7927/
           wget -O files/lib/firmware/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_MT6639_PATCH_MCU_2_1_hdr.bin"
           wget -O files/lib/firmware/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7927/WIFI_RAM_CODE_MT6639_2_1.bin"
-
           mkdir -p files/lib/firmware/ath12k/WCN7850/hw2.0/
           wget -O files/lib/firmware/ath12k/WCN7850/hw2.0/amss.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath12k/WCN7850/hw2.0/amss.bin"
           wget -O files/lib/firmware/ath12k/WCN7850/hw2.0/board-2.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath12k/WCN7850/hw2.0/board-2.bin"
           wget -O files/lib/firmware/ath12k/WCN7850/hw2.0/m3.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath12k/WCN7850/hw2.0/m3.bin"
-          
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-        
+
       - name: Inject Custom DNA (Ultimate Branding, Auto-Install APK & Layout)
         run: |
           cd openwrt
           mkdir -p files/etc/uci-defaults
-          mkdir -p files/etc/modprobe.d
-          
-          # Fix USB Autosuspend lewat Modprobe
-          echo "options usbcore autosuspend=-1" > files/etc/modprobe.d/disable-usb-autosuspend.conf
-
-          # RC.LOCAL (CPU Performance)
-          cat << 'RCLOCAL' > files/etc/rc.local
+          cat <<EOF > files/etc/uci-defaults/99-lemwrt-final
           #!/bin/sh
-          for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-              echo "performance" > "$g" 2>/dev/null
-          done
-          exit 0
-          RCLOCAL
-          chmod +x files/etc/rc.local
-
-          # INJEKSI UCI DEFAULTS
-          cat << 'LEMSETUP' > files/etc/uci-defaults/99-lemwrt-final
-          #!/bin/sh
-          
-          # 1. Identitas (Perintah 'passwd root' dihapus agar tidak HANG saat first boot)
+          # 1. Identitas
           uci set system.@system[0].hostname='${{ github.event.inputs.set_hostname }}'
-          uci commit system
-
-          # 2. Universal Bridge LAN & Global Network Settings
+          (echo 'mi1003'; echo 'mi1003') | passwd root
+          
+          # 2. Universal Bridge LAN
           uci delete network.lan
           uci set network.lan=interface
           uci set network.lan.device='br-lan'
@@ -341,12 +182,11 @@ jobs:
           uci set network.device_lan=device
           uci set network.device_lan.name='br-lan'
           uci set network.device_lan.type='bridge'
-          for i in $(ls /sys/class/net | grep -E 'eth|enp|ena'); do
-            uci add_list network.device_lan.ports="$i"
+          for i in \$(ls /sys/class/net | grep -E 'eth|enp|ena'); do
+            uci add_list network.device_lan.ports="\$i"
           done
-
-          uci set network.globals.packet_steering='1' 2>/dev/null || true
-
+          
+          # 2a. USB Tethering
           uci set network.wan_usb=interface
           uci set network.wan_usb.proto='dhcp'
           uci set network.wan_usb.device='usb0'
@@ -354,8 +194,8 @@ jobs:
           uci set network.device_usb=device
           uci set network.device_usb.name='usb0'
           uci commit network
-
-          # 3. WiFi Setup
+          
+          # 3. WiFi Setup (Universal Binding untuk Semua Radio)
           uci set wireless.radio0.disabled='0'
           uci set wireless.radio0.band='5g'
           uci set wireless.radio0.channel='149'
@@ -366,39 +206,60 @@ jobs:
           uci set wireless.default_radio0.key='mi123456'
           uci set wireless.default_radio0.encryption='sae-mixed'
           uci set wireless.default_radio0.network='lan'
+
+          if uci get wireless.default_radio1 >/dev/null 2>&1; then
+            uci set wireless.default_radio1.disabled='0'
+            uci set wireless.default_radio1.network='lan'
+          fi
+          if uci get wireless.default_radio2 >/dev/null 2>&1; then
+            uci set wireless.default_radio2.disabled='0'
+            uci set wireless.default_radio2.network='lan'
+          fi
           uci commit wireless
-
-          # 4. EXECUTING AUTOMATIC APK INSTALLATION (DI-BACKGROUND MENGHINDARI BOOT HANG)
-          (
-            sleep 15
-            if [ -d /root ] && [ -n "$(ls /root/*.apk 2>/dev/null)" ]; then
-              cd /root
-              apk add --allow-untrusted *.apk >/dev/null 2>&1
-              rm -f /root/*.apk
-            fi
-          ) &
-
-          # 5. AUTO-ENABLE BANDIX (HANYA ENABLE, JANGAN "start" KARENA BIKIN DEADLOCK)
+          
+          # 4. EXECUTING AUTOMATIC APK INSTALLATION
+          if [ -d /root ] && [ -n "\$(ls /root/*.apk 2>/dev/null)" ]; then
+            cd /root
+            apk add --allow-untrusted *.apk 2>/dev/null || true
+            rm -f /root/*.apk
+          fi
+          
+          # 5. AUTO-ENABLE & START BANDIX PLUS SERVICE
           uci set bandix_plus.main.enabled='1' 2>/dev/null || uci set bandix.main.enabled='1' 2>/dev/null || true
           uci commit bandix_plus 2>/dev/null || uci commit bandix 2>/dev/null || true
           /etc/init.d/bandix-plus enable 2>/dev/null || /etc/init.d/bandix enable 2>/dev/null || true
-
-          # 6. PENDAFTARAN TEMA DAN OPTIMASI
-          uci set luci.main.mediaurlbase='/luci-static/vantage' 2>/dev/null || uci set luci.main.mediaurlbase='/luci-static/argon'
+          /etc/init.d/bandix-plus start 2>/dev/null || /etc/init.d/bandix start 2>/dev/null || true
+          
+          # 6. PENDAFTARAN TEMA LENGKAP KE DROPDOWN LUCI DESIGN MENU
+          uci set luci.themes.Vantage='/luci-static/vantage'
+          uci set luci.themes.Proton='/luci-static/proton2025'
+          uci set luci.themes.Arwi='/luci-static/arwi'
+          uci set luci.themes.Argon='/luci-static/argon'
+          
+          # Theme Default Setup: VANTAGE sebagai tema default utama
+          if [ -d /www/luci-static/vantage ] || [ -d /www/luci-static/luci-theme-vantage ]; then
+            uci set luci.main.mediaurlbase='/luci-static/vantage'
+          elif [ -d /www/luci-static/proton2025 ] || [ -d /www/luci-static/proton ] || [ -d /www/luci-static/luci-theme-proton2025 ]; then
+            uci set luci.main.mediaurlbase='/luci-static/proton2025'
+          elif [ -d /www/luci-static/arwi ] || [ -d /www/luci-static/luci-theme-arwi ]; then
+            uci set luci.main.mediaurlbase='/luci-static/arwi'
+          else
+            uci set luci.main.mediaurlbase='/luci-static/argon'
+          fi
           uci commit luci
+          
+          # Clear LuCI Cache & Rebuild Menu Index
           rm -f /tmp/luci-indexcache /tmp/luci-modulecache/*
-
+          
+          # Optimasi ModemManager
           uci set modemmanager.@modemmanager[0].loglevel='ERR'
           uci set modemmanager.@modemmanager[0].enable_at_locking='0'
-
-          # 7. RE-GROUPING MENU & REGISTER DASHBOARD
+          
+          # 7. RE-GROUPING MENU
           [ -f /usr/share/luci/menu.d/luci-app-statistics.json ] && sed -i 's/"admin\/statistics"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-statistics.json
           [ -f /usr/share/luci/menu.d/luci-app-nlbwmon.json ] && sed -i 's/"admin\/bandwidth"/"admin\/statistics_root"/g' /usr/share/luci/menu.d/luci-app-nlbwmon.json
-
-          [ -f /usr/share/luci/menu.d/luci-app-vantage.json ] && sed -i 's/"admin\/status"/"admin\/status\/vantage"/g' /usr/share/luci/menu.d/luci-app-vantage.json
-          [ -f /usr/share/luci/menu.d/luci-app-arwi-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/arwi"/g' /usr/share/luci/menu.d/luci-app-arwi-dashboard.json
-          [ -f /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/proton"/g' /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json
-
+          
+          # MODEM Group
           [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
           [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
@@ -407,17 +268,21 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-modemdata.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-modemdata.json
           [ -f /usr/share/luci/menu.d/luci-app-internet-detector.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-internet-detector.json
           [ -f /usr/share/luci/menu.d/luci-app-5gmodem.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-5gmodem.json
+          [ -f /usr/share/luci/menu.d/luci-app-5gmodem.json ] && sed -i 's/"admin\/status"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-5gmodem.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           [ -f /usr/share/luci/menu.d/luci-app-imei-changer.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-imei-changer.json
           
+          # SPEEDTEST Grouping Khusus
           [ -f /usr/share/luci/menu.d/luci-app-netspeedtest.json ] && sed -i 's/"admin\/network"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-netspeedtest.json
-          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
+          [ -f /usr/share/luci/menu.d/luci-app-speedtest-onyx.json ] && sed -i 's/"admin\/status"/"admin\/speedtest"/g; s/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-speedtest-onyx.json
           [ -f /usr/share/luci/menu.d/luci-app-iperf3-server.json ] && sed -i 's/"admin\/services"/"admin\/speedtest"/g; s/"admin\/network"/"admin\/speedtest"/g' /usr/share/luci/menu.d/luci-app-iperf3-server.json
-
+          
+          # SERVICES Group
           [ -f /usr/share/luci/menu.d/luci-app-bandix-plus.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g; s/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-bandix.json ] && sed -i 's/"admin\/modem"/"admin\/services"/g; s/"admin\/network"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-bandix.json
           [ -f /usr/share/luci/menu.d/luci-app-ddnsto.json ] && sed -i 's/"admin\/services"/"admin\/services"/g' /usr/share/luci/menu.d/luci-app-ddnsto.json
           
+          # DNS, VPN, WIFI, NAS
           [ -f /usr/share/luci/menu.d/luci-app-adguardhome.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adguardhome.json
           [ -f /usr/share/luci/menu.d/luci-app-adblock-plus.json ] && sed -i 's/"admin\/services"/"admin\/dns"/g' /usr/share/luci/menu.d/luci-app-adblock-plus.json
           [ -f /usr/share/luci/menu.d/luci-app-openvpn.json ] && sed -i 's/"admin\/services"/"admin\/vpn"/g' /usr/share/luci/menu.d/luci-app-openvpn.json
@@ -432,7 +297,7 @@ jobs:
           
           uci commit
           exit 0
-          LEMSETUP
+          EOF
           chmod +x files/etc/uci-defaults/99-lemwrt-final
 
       - name: Load Configuration
@@ -452,14 +317,8 @@ jobs:
           echo "CONFIG_PACKAGE_luci-ssl-openssl=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-ttyd=y" >> .config
           echo "CONFIG_PACKAGE_ttyd=y" >> .config
-          
-          # Custom LuCI QManager App
-          echo "CONFIG_PACKAGE_luci-app-qmanager=y" >> .config
 
-          # CPU Governor Control Tools
-          echo "CONFIG_PACKAGE_cpufrequtils=y" >> .config
-          
-          # USB Host Controllers & USB Utilities Support (lsusb)
+          # USB Host Controllers & USB Utilities Support
           echo "CONFIG_PACKAGE_kmod-usb-core=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb2=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb3=y" >> .config
@@ -469,7 +328,7 @@ jobs:
           echo "CONFIG_PACKAGE_usbids=y" >> .config
           echo "CONFIG_PACKAGE_libusb-1.0-0=y" >> .config
           echo "CONFIG_PACKAGE_usbreset=y" >> .config
-          
+
           # Dependensi Speedtest Onyx & NetSpeedTest
           echo "CONFIG_PACKAGE_luci-app-netspeedtest=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-speedtest-onyx=y" >> .config
@@ -484,14 +343,14 @@ jobs:
           echo "CONFIG_PACKAGE_libacl=y" >> .config
           echo "CONFIG_PACKAGE_libzstd=y" >> .config
           echo "CONFIG_PACKAGE_liblzma=y" >> .config
-          
+
           # Paket Pilihan Ekosistem iStoreOS (Linkease)
           echo "CONFIG_PACKAGE_luci-app-istoreenhance=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-ddnsto=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-dockermanager=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-unishare=y" >> .config
           echo "CONFIG_PACKAGE_luci-lib-iform=y" >> .config
-          
+
           # LuCI Mobile API Support Backend & Backend Vantage Theme
           echo "CONFIG_PACKAGE_rpcd=y" >> .config
           echo "CONFIG_PACKAGE_rpcd-mod-luci=y" >> .config
@@ -500,7 +359,7 @@ jobs:
           echo "CONFIG_PACKAGE_iwinfo=y" >> .config
           echo "CONFIG_PACKAGE_libiwinfo=y" >> .config
           echo "CONFIG_PACKAGE_libiwinfo-lua=y" >> .config
-          
+
           # Themes & Dashboards
           echo "CONFIG_PACKAGE_luci-theme-vantage=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-vantage=y" >> .config
@@ -510,10 +369,8 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-arwi-dashboard=y" >> .config
           echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
-
-          # Paket TinyFileManager Muink
           echo "CONFIG_PACKAGE_luci-app-tinyfilemanager=y" >> .config
-          
+
           # Dependensi PHP8 Lengkap
           echo "CONFIG_PACKAGE_php8=y" >> .config
           echo "CONFIG_PACKAGE_php8-cgi=y" >> .config
@@ -525,7 +382,6 @@ jobs:
           echo "CONFIG_PACKAGE_php8-mod-session=y" >> .config
           echo "CONFIG_PACKAGE_php8-mod-zip=y" >> .config
           echo "CONFIG_PACKAGE_uhttpd=y" >> .config
-
           echo "CONFIG_PACKAGE_kmod-fs-ext4=y" >> .config
           echo "CONFIG_PACKAGE_kmod-nls-base=y" >> .config
           echo "CONFIG_PACKAGE_kmod-nls-utf8=y" >> .config
@@ -594,6 +450,7 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mac80211=y" >> .config
           echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
           echo "CONFIG_PACKAGE_nano=y" >> .config
+
           # Wireless & Drivers
           echo "CONFIG_PACKAGE_kmod-mt7921e=y" >> .config
           echo "CONFIG_PACKAGE_mt7921bt-firmware=y" >> .config
@@ -604,19 +461,15 @@ jobs:
           echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
           echo "CONFIG_PACKAGE_kmod-iwlwifi=y" >> .config
           echo "CONFIG_PACKAGE_iwlwifi-firmware-ax200=y" >> .config
-          # Driver WiFi Qualcomm QCA9882
           echo "CONFIG_PACKAGE_kmod-ath10k=y" >> .config
           echo "CONFIG_PACKAGE_ath10k-firmware-qca988x=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath10k-ct=n" >> .config
-          # Driver WiFi Qualcomm ATH9K
           echo "CONFIG_PACKAGE_kmod-ath9k=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath9k-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath9k-htc=y" >> .config
           echo "CONFIG_PACKAGE_ath9k-htc-firmware=y" >> .config
-          # Driver WiFi Qualcomm ATH12K - chip QCN9274
           echo "CONFIG_PACKAGE_kmod-ath12k=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-qcn9274=y" >> .config
-          # Driver WiFi Qualcomm ATH12K - chip WCN7850
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct=y" >> .config
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full=y" >> .config
@@ -624,7 +477,6 @@ jobs:
           echo "CONFIG_PACKAGE_ath12k-firmware-wcn7850-ct-full-htt-wifi3=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-ct=n" >> .config
           echo "CONFIG_PACKAGE_kmod-ath12k-htc=y" >> .config
-          # Driver WiFi MediaTek MT7925 & MT7927
           echo "CONFIG_PACKAGE_kmod-mt7925-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925-firmware=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7925e=y" >> .config
@@ -632,25 +484,26 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-mt7925s=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt792x-common=y" >> .config
           echo "CONFIG_PACKAGE_mt7925bt-firmware=y" >> .config
-          # Driver USB WiFi MT7922
           echo "CONFIG_PACKAGE_kmod-mt7922-common=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922-firmware=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922u=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mt7922s=y" >> .config
-          # Driver WiFi TP-Link Archer T2U & T2U Plus (RTL8812AU / RTL8821AU)
           echo "CONFIG_PACKAGE_kmod-rtl8812au-ct=y" >> .config
           echo "CONFIG_PACKAGE_kmod-rtl8821au=y" >> .config
           echo "CONFIG_PACKAGE_rtl8821au-firmware=y" >> .config
+
           # Hardware Inspection Utils
           echo "CONFIG_PACKAGE_pciutils=y" >> .config
           echo "CONFIG_PACKAGE_pciids=y" >> .config
           echo "CONFIG_PACKAGE_libpci=y" >> .config
           echo "CONFIG_PACKAGE_sysfsutils=y" >> .config
+
           # User Management Utils (Shadow)
           echo "CONFIG_PACKAGE_shadow-utils=y" >> .config
           echo "CONFIG_PACKAGE_shadow-common=y" >> .config
           echo "CONFIG_PACKAGE_shadow-useradd=y" >> .config
+
           # Storage Monitoring & Software RAID
           echo "CONFIG_PACKAGE_smartmontools=y" >> .config
           echo "CONFIG_PACKAGE_smartd=y" >> .config
@@ -659,9 +512,11 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-md-raid0=y" >> .config
           echo "CONFIG_PACKAGE_kmod-md-raid1=y" >> .config
           echo "CONFIG_PACKAGE_kmod-md-raid10=y" >> .config
+
           # Bandwidth & Traffic Monitoring
           echo "CONFIG_PACKAGE_nlbwmon=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-nlbwmon=y" >> .config
+
           # USB Tethering & USB Serial Drivers
           echo "CONFIG_PACKAGE_kmod-usb-net=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rndis=y" >> .config
@@ -670,6 +525,7 @@ jobs:
           echo "CONFIG_PACKAGE_kmod-usb-acm=y" >> .config
           echo "CONFIG_PACKAGE_usbmuxd=y" >> .config
           echo "CONFIG_PACKAGE_libimobiledevice=y" >> .config
+
           # Apps & NAS
           echo "CONFIG_PACKAGE_luci-app-samba4=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-filebrowser=y" >> .config
@@ -679,6 +535,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_socat=y" >> .config
+
           # Driver & Apps Lainnya
           echo "CONFIG_PACKAGE_kmod-usb-net-asix-ax88179=y" >> .config
           echo "CONFIG_PACKAGE_kmod-usb-net-rtl8152=y" >> .config
@@ -686,31 +543,38 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-statistics=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-openvpn=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-wireguard=y" >> .config
+
           # Bandix Plus Traffic Monitoring
           echo "CONFIG_PACKAGE_openwrt-bandix-plus=y" >> .config
           echo "CONFIG_PACKAGE_bandix-plus=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-bandix-plus=y" >> .config
+
           # Ekosistem iStore
           echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
+
           # LuCI 5G Modem & IMEI Changer
           echo "CONFIG_PACKAGE_luci-app-5gmodem=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-imei-changer=y" >> .config
           echo "CONFIG_PACKAGE_sms-tool=y" >> .config
           echo "CONFIG_PACKAGE_atinout=y" >> .config
+
           # Custom Apps
           echo "CONFIG_PACKAGE_luci-app-internet-detector=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-poweroff=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-lite-watchdog=y" >> .config
           echo "CONFIG_PACKAGE_apcontroller=y" >> .config
-          # Driver LAN PCIe High-End
+
+          # Driver LAN PCIe High-End (Intel Server Grade)
           echo "CONFIG_PACKAGE_kmod-ixgbe=y" >> .config
           echo "CONFIG_PACKAGE_kmod-e1000e=y" >> .config
           echo "CONFIG_PACKAGE_kmod-forcedeth=y" >> .config
-          # Hardware Support
+
+          # Hardware Support (Intel/Realtek)
           echo "CONFIG_PACKAGE_igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igb=y" >> .config
           echo "CONFIG_PACKAGE_kmod-igc=y" >> .config
           echo "CONFIG_PACKAGE_kmod-r8169=y" >> .config
+
           # RM520N / 5G Support
           echo "CONFIG_PACKAGE_kmod-mhi-bus=y" >> .config
           echo "CONFIG_PACKAGE_kmod-mhi-net=y" >> .config
