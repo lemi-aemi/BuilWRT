@@ -198,7 +198,7 @@ jobs:
           		s_cfg.option(form.Value, 'modem1_ip', _('Modem 1 IP Address')).datatype = 'ip4addr';
           		s_cfg.option(form.Value, 'modem1_port', _('Modem 1 Port')).datatype = 'port';
 
-          		s_cfg.option(form.Value, 'modem2_name', _('Modem 2 Label')).default = 'Modem 2 (HiFi Air)';
+          		s_cfg.option(form.Value, 'modem2_name', _('Modem 2 Label')).default = 'Modem 2 (Secondary)';
           		s_cfg.option(form.Value, 'modem2_ip', _('Modem 2 IP Address')).datatype = 'ip4addr';
           		s_cfg.option(form.Value, 'modem2_port', _('Modem 2 Port')).datatype = 'port';
 
