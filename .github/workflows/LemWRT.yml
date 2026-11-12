@@ -1,4 +1,4 @@
-name: Build LemWRT x86_64 Final Ultra-Pro
+name: Build LemWRT x86_64 Final Ultra-Pro (MWAN4 + Firewall4)
 
 on:
   workflow_dispatch:
@@ -222,6 +222,25 @@ jobs:
           include \$(TOPDIR)/feeds/luci/luci.mk
           QMMAKE
 
+          # ----------------------------------------------------
+          # CLONE MWAN4 BACKEND (mossdef-org) & LUCI UI (brauliobo)
+          # ----------------------------------------------------
+          rm -rf /tmp/mwan4-core /tmp/mwan4-luci
+          git clone --depth 1 https://github.com/mossdef-org/mwan4.git /tmp/mwan4-core
+          if [ -f "/tmp/mwan4-core/Makefile" ]; then
+            cp -a /tmp/mwan4-core ./mwan4
+          else
+            cp -a /tmp/mwan4-core/* . 2>/dev/null || true
+          fi
+
+          git clone --depth 1 https://github.com/brauliobo/luci-app-mwan4.git /tmp/mwan4-luci
+          if [ -f "/tmp/mwan4-luci/Makefile" ]; then
+            cp -a /tmp/mwan4-luci ./luci-app-mwan4
+          else
+            cp -a /tmp/mwan4-luci/* . 2>/dev/null || true
+          fi
+          rm -rf /tmp/mwan4-core /tmp/mwan4-luci
+
           # Clone Repositori Lainnya
           rm -rf /tmp/lemi-imei-repo
           git clone --depth 1 https://github.com/lemi-aemi/build-apk.yml.git /tmp/lemi-imei-repo
@@ -412,8 +431,8 @@ jobs:
           [ -f /usr/share/luci/menu.d/luci-app-arwi-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/arwi"/g' /usr/share/luci/menu.d/luci-app-arwi-dashboard.json
           [ -f /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json ] && sed -i 's/"admin\/status"/"admin\/status\/proton"/g' /usr/share/luci/menu.d/luci-app-proton2025-dashboard.json
           
-          # MODEM Group
-          [ -f /usr/share/luci/menu.d/luci-app-mwan3.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan3.json
+          # MODEM Group (MWAN4 dipindahkan ke tab Modem)
+          [ -f /usr/share/luci/menu.d/luci-app-mwan4.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-mwan4.json
           [ -f /usr/share/luci/menu.d/ModemManager.json ] && sed -i 's/"admin\/network"/"admin\/modem"/g' /usr/share/luci/menu.d/ModemManager.json
           [ -f /usr/share/luci/menu.d/luci-app-atinout.json ] && sed -i 's/"admin\/services"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-atinout.json
           [ -f /usr/share/luci/menu.d/luci-app-3ginfo-lite.json ] && sed -i 's/"admin\/status"/"admin\/modem"/g' /usr/share/luci/menu.d/luci-app-3ginfo-lite.json
@@ -567,12 +586,28 @@ jobs:
           echo "CONFIG_PACKAGE_openssl-util=y" >> .config
           echo "CONFIG_PACKAGE_openssl=y" >> .config
           echo "CONFIG_PACKAGE_ca-certificates=y" >> .config
-          echo "CONFIG_PACKAGE_dnsmasq=y" >> .config
+          echo "CONFIG_PACKAGE_dnsmasq=n" >> .config
           echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
-          echo "CONFIG_PACKAGE_firewall=y" >> .config
-          echo "CONFIG_PACKAGE_iptables=y" >> .config
+
+          # Full Firewall4 (NFTables) & MWAN4 Architecture
+          echo "CONFIG_PACKAGE_firewall=n" >> .config
+          echo "CONFIG_PACKAGE_firewall4=y" >> .config
+          echo "CONFIG_PACKAGE_nftables=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-core=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-nat=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-fib=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-tproxy=y" >> .config
+          echo "CONFIG_PACKAGE_kmod-nft-socket=y" >> .config
+          echo "CONFIG_PACKAGE_iptables-nft=y" >> .config
           echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
           echo "CONFIG_PACKAGE_kmod-ipt-tproxy=y" >> .config
+
+          # MWAN4 Multi-WAN (Disable MWAN3)
+          echo "CONFIG_PACKAGE_mwan3=n" >> .config
+          echo "CONFIG_PACKAGE_luci-app-mwan3=n" >> .config
+          echo "CONFIG_PACKAGE_mwan4=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-mwan4=y" >> .config
+
           echo "CONFIG_PACKAGE_logd=y" >> .config
           echo "CONFIG_PACKAGE_miniupnpd=y" >> .config
           echo "CONFIG_PACKAGE_ppp=y" >> .config
@@ -692,7 +727,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-adguardhome=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-atinout=y" >> .config
           echo "CONFIG_PACKAGE_luci-app-3ginfo-lite=y" >> .config
-          echo "CONFIG_PACKAGE_luci-app-mwan3=y" >> .config
           echo "CONFIG_PACKAGE_socat=y" >> .config
 
           # Driver & Apps Lainnya
@@ -762,5 +796,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LemWRT-UltraPro_${{ steps.date.outputs.date }}
+          name: LemWRT-UltraPro-MWAN4_${{ steps.date.outputs.date }}
           path: openwrt/bin/targets/x86/64/*.img.gz
